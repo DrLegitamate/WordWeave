@@ -1,6 +1,9 @@
 class Translator {
   constructor() {
     this.state = null;
+    this.translationCache = new Map();
+    this.pendingTranslations = new Set();
+    this.debounceTimer = null;
     this.initialize();
   }
 
@@ -12,11 +15,16 @@ class Translator {
 
   setupMutationObserver() {
     const observer = new MutationObserver(mutations => {
-      mutations.forEach(mutation => {
-        if (mutation.type === 'childList') {
-          this.processNewNodes(mutation.addedNodes);
+      clearTimeout(this.debounceTimer);
+      this.debounceTimer = setTimeout(() => {
+        const addedNodes = mutations
+          .filter(m => m.type === 'childList')
+          .flatMap(m => Array.from(m.addedNodes));
+        
+        if (addedNodes.length > 0) {
+          this.processNewNodes(addedNodes);
         }
-      });
+      }, 1000);
     });
 
     observer.observe(document.body, {
@@ -26,89 +34,101 @@ class Translator {
   }
 
   processNewNodes(nodes) {
-    nodes.forEach(node => {
-      if (node.nodeType === Node.TEXT_NODE) {
-        this.processTextNode(node);
-      } else if (node.nodeType === Node.ELEMENT_NODE) {
-        this.processElement(node);
-      }
-    });
-  }
+    const textBlocks = nodes
+      .filter(node => this.isSignificantTextBlock(node))
+      .map(node => this.extractTextContent(node));
 
-  processElement(element) {
-    if (this.shouldSkipElement(element)) return;
-
-    const walker = document.createTreeWalker(
-      element,
-      NodeFilter.SHOW_TEXT,
-      null,
-      false
-    );
-
-    let node;
-    while (node = walker.nextNode()) {
-      this.processTextNode(node);
+    if (textBlocks.length > 0) {
+      this.translateTextBlocks(textBlocks);
     }
   }
 
-  shouldSkipElement(element) {
-    const skipTags = ['SCRIPT', 'STYLE', 'CODE', 'PRE'];
-    return skipTags.includes(element.tagName) ||
-           element.classList.contains('no-translate');
+  isSignificantTextBlock(node) {
+    if (!node.textContent?.trim()) return false;
+    if (this.shouldSkipElement(node)) return false;
+
+    // Only translate significant text blocks (paragraphs, headings, etc.)
+    const significantTags = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'TD', 'DIV'];
+    return significantTags.includes(node.tagName) && 
+           node.textContent.trim().split(/\s+/).length > 3;
   }
 
-  async processTextNode(node) {
+  shouldSkipElement(element) {
+    const skipTags = ['SCRIPT', 'STYLE', 'CODE', 'PRE', 'TEXTAREA', 'INPUT'];
+    return skipTags.includes(element?.tagName) ||
+           element?.classList?.contains('no-translate') ||
+           element?.isContentEditable;
+  }
+
+  extractTextContent(node) {
+    return {
+      node,
+      text: node.textContent.trim(),
+      words: node.textContent.trim().split(/\s+/)
+    };
+  }
+
+  async translateTextBlocks(blocks) {
     if (!this.state.enabled) return;
-    if (!node.textContent.trim()) return;
 
     const translationRate = this.getTranslationRate();
-    const words = node.textContent.split(/\b/);
-    const translatedWords = await Promise.all(
-      words.map(async word => {
-        if (Math.random() > translationRate) return word;
-        
-        const translation = await this.translateWord(word);
-        return this.wrapTranslatedWord(word, translation);
-      })
-    );
+    for (const block of blocks) {
+      const wordsToTranslate = block.words
+        .filter(() => Math.random() < translationRate)
+        .filter(word => !this.translationCache.has(word));
 
-    const span = document.createElement('span');
-    span.innerHTML = translatedWords.join('');
-    node.replaceWith(span);
+      if (wordsToTranslate.length === 0) continue;
+
+      try {
+        const translation = await this.batchTranslate(wordsToTranslate);
+        wordsToTranslate.forEach((word, i) => {
+          this.translationCache.set(word, translation[i]);
+        });
+
+        this.updateBlockContent(block);
+      } catch (error) {
+        console.error('Translation error:', error);
+      }
+    }
+  }
+
+  async batchTranslate(words) {
+    const response = await browser.runtime.sendMessage({
+      type: 'TRANSLATE_TEXT',
+      payload: { text: words.join('\n') }
+    });
+    return response.translation.split('\n');
+  }
+
+  updateBlockContent(block) {
+    const { node, words } = block;
+    const translatedContent = words.map(word => {
+      const translation = this.translationCache.get(word);
+      return translation ? 
+        `<span class="gt-word" data-original="${word}">${translation}</span>` :
+        word;
+    }).join(' ');
+
+    if (node.innerHTML !== translatedContent) {
+      node.innerHTML = translatedContent;
+    }
   }
 
   getTranslationRate() {
     const rates = {
-      low: 0.2,
-      medium: 0.5,
-      high: 0.8
+      low: 0.15,
+      medium: 0.3,
+      high: 0.5
     };
-    return rates[this.state.translationRate] || 0.5;
-  }
-
-  async translateWord(word) {
-    if (!word.trim()) return word;
-    
-    try {
-      const response = await browser.runtime.sendMessage({
-        type: 'TRANSLATE_TEXT',
-        payload: { text: word }
-      });
-      return response.translation || word;
-    } catch (error) {
-      console.error('Translation error:', error);
-      return word;
-    }
-  }
-
-  wrapTranslatedWord(original, translation) {
-    return `<span class="translated-word" data-original="${original}">
-              ${translation}
-            </span>`;
+    return rates[this.state.translationRate] || 0.3;
   }
 
   processPage() {
-    this.processElement(document.body);
+    const textBlocks = Array.from(document.body.getElementsByTagName('*'))
+      .filter(node => this.isSignificantTextBlock(node))
+      .map(node => this.extractTextContent(node));
+
+    this.translateTextBlocks(textBlocks);
   }
 }
 
