@@ -1,0 +1,55 @@
+.translated-word {
+  position: relative;
+  cursor: help;
+  border-bottom: 1px dashed #4a90e2;
+}
+
+.translated-word:hover::after {
+  content: attr(data-original);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  background-color: #333;
+  color: white;
+  border-radius: 4px;
+  font-size: 14px;
+  white-space: nowrap;
+  z-index: 1000;
+}
+
+.translation-toolbar {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 8px;
+  z-index: 10000;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.translation-toolbar button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  background: #4a90e2;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.translation-toolbar button:hover {
+  background: #357abd;
+}
+
+.translation-toolbar select {
+  padding: 6px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}

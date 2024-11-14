@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="options-container">
+    <h1>GlobalFoxTalk Settings</h1>
+    
+    <section>
+      <h2>Translation Settings</h2>
+      <div class="option-group">
+        <label>
+          <input type="checkbox" id="translateHeaders">
+          Translate page headers
+        </label>
+        <label>
+          <input type="checkbox" id="translateNav">
+          Translate navigation menus
+        </label>
+        <label>
+          <input type="checkbox" id="showTooltips">
+          Show translation tooltips
+        </label>
+      </div>
+    </section>
+    
+    <section>
+      <h2>Appearance</h2>
+      <div class="option-group">
+        <label>
+          Highlight Color:
+          <input type="color" id="highlightColor" value="#4a90e2">
+        </label>
+        <label>
+          Font Size:
+          <select id="fontSize">
+            <option value="small">Small</option>
+            <option value="medium">Medium</option>
+            <option value="large">Large</option>
+          </select>
+        </label>
+      </div>
+    </section>
+    
+    <div class="actions">
+      <button id="saveOptions">Save Settings</button>
+      <button id="resetOptions">Reset to Defaults</button>
+    </div>
+  </div>
+  <script src="options.js"></script>
+</body>
+</html>
