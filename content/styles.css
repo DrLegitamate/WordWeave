@@ -1,10 +1,15 @@
-.translated-word {
-  position: relative;
+.gt-word {
   cursor: help;
-  border-bottom: 1px dashed #4a90e2;
+  position: relative;
+  color: inherit;
+  text-decoration: none;
 }
 
-.translated-word:hover::after {
+.gt-word:hover {
+  color: #4a90e2;
+}
+
+.gt-word:hover::after {
   content: attr(data-original);
   position: absolute;
   bottom: 100%;
@@ -17,39 +22,17 @@
   font-size: 14px;
   white-space: nowrap;
   z-index: 1000;
+  margin-bottom: 4px;
 }
 
-.translation-toolbar {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  padding: 8px;
-  z-index: 10000;
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.translation-toolbar button {
-  padding: 6px 12px;
-  border: none;
-  border-radius: 4px;
-  background: #4a90e2;
-  color: white;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.translation-toolbar button:hover {
-  background: #357abd;
-}
-
-.translation-toolbar select {
-  padding: 6px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
+/* Add a small arrow to the tooltip */
+.gt-word:hover::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: #333;
+  margin-bottom: -4px;
 }
