@@ -23,11 +23,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 function initializeUI() {
   // Translation settings
+  document.getElementById('sourceLanguageOptions').value = currentState.autoDetectLanguage ? 'auto' : (currentState.sourceLanguage || 'en');
+  document.getElementById('targetLanguageOptions').value = currentState.targetLanguage ?? 'es';
   document.getElementById('translateHeaders').checked = currentState.translateHeaders ?? true;
   document.getElementById('translateNav').checked = currentState.translateNav ?? true;
   document.getElementById('showTooltips').checked = currentState.showTooltips ?? true;
   document.getElementById('translationService').value = currentState.translationService ?? 'libretranslate';
-  document.getElementById('autoDetectLanguage').checked = currentState.autoDetectLanguage ?? true;
   
   // Appearance settings
   document.getElementById('highlightColor').value = currentState.highlightColor ?? '#4a90e2';
@@ -59,6 +60,27 @@ function setupEventListeners() {
       const section = e.target.dataset.section;
       switchSection(section);
     });
+  });
+  
+  // Source language changes
+  document.getElementById('sourceLanguageOptions').addEventListener('change', (e) => {
+    const value = e.target.value;
+    if (value === 'auto') {
+      updateState({ 
+        autoDetectLanguage: true,
+        sourceLanguage: 'en' // fallback
+      });
+    } else {
+      updateState({ 
+        autoDetectLanguage: false,
+        sourceLanguage: value 
+      });
+    }
+  });
+  
+  // Target language changes
+  document.getElementById('targetLanguageOptions').addEventListener('change', (e) => {
+    updateState({ targetLanguage: e.target.value });
   });
   
   // Color picker synchronization
@@ -96,7 +118,7 @@ function setupEventListeners() {
   // Auto-save on change for most settings
   const autoSaveElements = [
     'translateHeaders', 'translateNav', 'showTooltips', 
-    'translationService', 'autoDetectLanguage', 'dailyGoalOptions'
+    'translationService', 'dailyGoalOptions'
   ];
   
   autoSaveElements.forEach(id => {
@@ -159,12 +181,16 @@ async function saveAllOptions() {
 }
 
 function gatherFormData() {
+  const sourceLanguageValue = document.getElementById('sourceLanguageOptions').value;
+  
   return {
+    autoDetectLanguage: sourceLanguageValue === 'auto',
+    sourceLanguage: sourceLanguageValue === 'auto' ? 'en' : sourceLanguageValue,
+    targetLanguage: document.getElementById('targetLanguageOptions').value,
     translateHeaders: document.getElementById('translateHeaders').checked,
     translateNav: document.getElementById('translateNav').checked,
     showTooltips: document.getElementById('showTooltips').checked,
     translationService: document.getElementById('translationService').value,
-    autoDetectLanguage: document.getElementById('autoDetectLanguage').checked,
     highlightColor: document.getElementById('highlightColor').value,
     fontSize: document.getElementById('fontSize').value,
     dailyGoal: parseInt(document.getElementById('dailyGoalOptions').value),
@@ -308,6 +334,8 @@ async function resetAllSettings() {
       enabled: false,
       translationRate: 'medium',
       targetLanguage: 'es',
+      sourceLanguage: 'en',
+      autoDetectLanguage: true,
       translateHeaders: true,
       translateNav: true,
       showTooltips: true,
@@ -316,7 +344,6 @@ async function resetAllSettings() {
       customVocab: {},
       learnedWords: {},
       translationService: 'libretranslate',
-      autoDetectLanguage: true,
       excludedSites: [],
       dailyGoal: 10,
       wordsLearnedToday: 0,
@@ -342,13 +369,14 @@ async function resetToDefaults() {
     const defaults = {
       translationRate: 'medium',
       targetLanguage: 'es',
+      sourceLanguage: 'en',
+      autoDetectLanguage: true,
       translateHeaders: true,
       translateNav: true,
       showTooltips: true,
       highlightColor: '#4a90e2',
       fontSize: 'medium',
       translationService: 'libretranslate',
-      autoDetectLanguage: true,
       excludedSites: [],
       dailyGoal: 10
     };

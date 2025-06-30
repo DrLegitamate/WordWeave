@@ -26,6 +26,56 @@
         <h2>Translation Settings</h2>
         
         <div class="option-group">
+          <h3>Language Configuration</h3>
+          <label for="sourceLanguageOptions">Source Language:</label>
+          <select id="sourceLanguageOptions">
+            <option value="auto">Auto-detect</option>
+            <option value="ar">Arabic (العربية)</option>
+            <option value="zh">Chinese (中文)</option>
+            <option value="nl">Dutch (Nederlands)</option>
+            <option value="en">English</option>
+            <option value="fr">French (Français)</option>
+            <option value="de">German (Deutsch)</option>
+            <option value="hi">Hindi (हिन्दी)</option>
+            <option value="id">Indonesian (Bahasa Indonesia)</option>
+            <option value="it">Italian (Italiano)</option>
+            <option value="ja">Japanese (日本語)</option>
+            <option value="ko">Korean (한국어)</option>
+            <option value="pl">Polish (Polski)</option>
+            <option value="pt">Portuguese (Português)</option>
+            <option value="ru">Russian (Русский)</option>
+            <option value="es">Spanish (Español)</option>
+            <option value="tr">Turkish (Türkçe)</option>
+            <option value="uk">Ukrainian (Українська)</option>
+            <option value="vi">Vietnamese (Tiếng Việt)</option>
+          </select>
+          <p class="help-text">Choose the language of the content you're reading. Auto-detect works best with LibreTranslate.</p>
+          
+          <label for="targetLanguageOptions">Target Language:</label>
+          <select id="targetLanguageOptions">
+            <option value="ar">Arabic (العربية)</option>
+            <option value="zh">Chinese (中文)</option>
+            <option value="nl">Dutch (Nederlands)</option>
+            <option value="en">English</option>
+            <option value="fr">French (Français)</option>
+            <option value="de">German (Deutsch)</option>
+            <option value="hi">Hindi (हिन्दी)</option>
+            <option value="id">Indonesian (Bahasa Indonesia)</option>
+            <option value="it">Italian (Italiano)</option>
+            <option value="ja">Japanese (日本語)</option>
+            <option value="ko">Korean (한국어)</option>
+            <option value="pl">Polish (Polski)</option>
+            <option value="pt">Portuguese (Português)</option>
+            <option value="ru">Russian (Русский)</option>
+            <option value="es">Spanish (Español)</option>
+            <option value="tr">Turkish (Türkçe)</option>
+            <option value="uk">Ukrainian (Українська)</option>
+            <option value="vi">Vietnamese (Tiếng Việt)</option>
+          </select>
+          <p class="help-text">The language you want to learn.</p>
+        </div>
+        
+        <div class="option-group">
           <h3>Content Types</h3>
           <label class="checkbox-label">
             <input type="checkbox" id="translateHeaders">
@@ -48,19 +98,10 @@
           <h3>Translation Service</h3>
           <label for="translationService">Service Provider:</label>
           <select id="translationService">
-            <option value="libretranslate">LibreTranslate (Default)</option>
-            <option value="mymemory">MyMemory</option>
+            <option value="libretranslate">LibreTranslate (Recommended)</option>
+            <option value="mymemory">MyMemory (Fallback)</option>
           </select>
-          <p class="help-text">LibreTranslate is recommended for privacy and reliability.</p>
-        </div>
-
-        <div class="option-group">
-          <h3>Language Detection</h3>
-          <label class="checkbox-label">
-            <input type="checkbox" id="autoDetectLanguage">
-            <span class="checkmark"></span>
-            Automatically detect source language
-          </label>
+          <p class="help-text">LibreTranslate is recommended for privacy and supports auto-detection. MyMemory requires explicit source language selection.</p>
         </div>
       </section>
 

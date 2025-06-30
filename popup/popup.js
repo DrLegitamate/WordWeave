@@ -26,6 +26,7 @@ function initializeUI(state, stats) {
   document.getElementById('enableToggle').checked = state.enabled;
   
   // Initialize settings
+  document.getElementById('sourceLanguage').value = state.autoDetectLanguage ? 'auto' : (state.sourceLanguage || 'en');
   document.getElementById('targetLanguage').value = state.targetLanguage;
   document.getElementById('translationRate').value = state.translationRate;
   document.getElementById('dailyGoal').value = state.dailyGoal || 10;
@@ -55,17 +56,37 @@ function setupEventListeners() {
     updateStatus(enabled ? 'Extension enabled' : 'Extension disabled');
   });
   
-  // Settings changes
-  document.getElementById('targetLanguage').addEventListener('change', async (e) => {
-    await updateState({ targetLanguage: e.target.value });
-    updateStatus('Language updated');
+  // Source language changes
+  document.getElementById('sourceLanguage').addEventListener('change', async (e) => {
+    const value = e.target.value;
+    if (value === 'auto') {
+      await updateState({ 
+        autoDetectLanguage: true,
+        sourceLanguage: 'en' // fallback
+      });
+      updateStatus('Auto-detection enabled');
+    } else {
+      await updateState({ 
+        autoDetectLanguage: false,
+        sourceLanguage: value 
+      });
+      updateStatus('Source language updated');
+    }
   });
   
+  // Target language changes
+  document.getElementById('targetLanguage').addEventListener('change', async (e) => {
+    await updateState({ targetLanguage: e.target.value });
+    updateStatus('Target language updated');
+  });
+  
+  // Translation rate changes
   document.getElementById('translationRate').addEventListener('change', async (e) => {
     await updateState({ translationRate: e.target.value });
     updateStatus('Translation rate updated');
   });
   
+  // Daily goal changes
   document.getElementById('dailyGoal').addEventListener('change', async (e) => {
     const dailyGoal = parseInt(e.target.value);
     await updateState({ dailyGoal });
