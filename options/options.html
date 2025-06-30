@@ -2,53 +2,186 @@
 <html>
 <head>
   <meta charset="UTF-8">
+  <title>GlobalFoxTalk - Advanced Settings</title>
   <link rel="stylesheet" href="options.css">
 </head>
 <body>
   <div class="options-container">
-    <h1>GlobalFoxTalk Settings</h1>
+    <header class="options-header">
+      <h1>GlobalFoxTalk Advanced Settings</h1>
+      <div class="version">Version 1.1.0</div>
+    </header>
     
-    <section>
-      <h2>Translation Settings</h2>
-      <div class="option-group">
-        <label>
-          <input type="checkbox" id="translateHeaders">
-          Translate page headers
-        </label>
-        <label>
-          <input type="checkbox" id="translateNav">
-          Translate navigation menus
-        </label>
-        <label>
-          <input type="checkbox" id="showTooltips">
-          Show translation tooltips
-        </label>
-      </div>
-    </section>
-    
-    <section>
-      <h2>Appearance</h2>
-      <div class="option-group">
-        <label>
-          Highlight Color:
-          <input type="color" id="highlightColor" value="#4a90e2">
-        </label>
-        <label>
-          Font Size:
-          <select id="fontSize">
-            <option value="small">Small</option>
-            <option value="medium">Medium</option>
-            <option value="large">Large</option>
+    <nav class="options-nav">
+      <button class="nav-btn active" data-section="translation">Translation</button>
+      <button class="nav-btn" data-section="appearance">Appearance</button>
+      <button class="nav-btn" data-section="learning">Learning</button>
+      <button class="nav-btn" data-section="sites">Sites</button>
+      <button class="nav-btn" data-section="data">Data</button>
+    </nav>
+
+    <main class="options-content">
+      <!-- Translation Settings -->
+      <section id="translation-section" class="option-section active">
+        <h2>Translation Settings</h2>
+        
+        <div class="option-group">
+          <h3>Content Types</h3>
+          <label class="checkbox-label">
+            <input type="checkbox" id="translateHeaders">
+            <span class="checkmark"></span>
+            Translate page headers and titles
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="translateNav">
+            <span class="checkmark"></span>
+            Translate navigation menus
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="showTooltips">
+            <span class="checkmark"></span>
+            Show original text tooltips on hover
+          </label>
+        </div>
+
+        <div class="option-group">
+          <h3>Translation Service</h3>
+          <label for="translationService">Service Provider:</label>
+          <select id="translationService">
+            <option value="libretranslate">LibreTranslate (Default)</option>
+            <option value="mymemory">MyMemory</option>
           </select>
-        </label>
+          <p class="help-text">LibreTranslate is recommended for privacy and reliability.</p>
+        </div>
+
+        <div class="option-group">
+          <h3>Language Detection</h3>
+          <label class="checkbox-label">
+            <input type="checkbox" id="autoDetectLanguage">
+            <span class="checkmark"></span>
+            Automatically detect source language
+          </label>
+        </div>
+      </section>
+
+      <!-- Appearance Settings -->
+      <section id="appearance-section" class="option-section">
+        <h2>Appearance Settings</h2>
+        
+        <div class="option-group">
+          <h3>Visual Style</h3>
+          <label for="highlightColor">Highlight Color:</label>
+          <div class="color-input-group">
+            <input type="color" id="highlightColor" value="#4a90e2">
+            <input type="text" id="highlightColorText" value="#4a90e2" pattern="^#[0-9A-Fa-f]{6}$">
+          </div>
+          
+          <label for="fontSize">Font Size:</label>
+          <select id="fontSize">
+            <option value="small">Small (90%)</option>
+            <option value="medium">Medium (100%)</option>
+            <option value="large">Large (110%)</option>
+          </select>
+        </div>
+
+        <div class="option-group">
+          <h3>Preview</h3>
+          <div class="preview-area">
+            <p>This is a sample text with <span class="gt-word preview-word" data-original="translated">traducido</span> words to show how translations will appear on websites.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Learning Settings -->
+      <section id="learning-section" class="option-section">
+        <h2>Learning Settings</h2>
+        
+        <div class="option-group">
+          <h3>Daily Goals</h3>
+          <label for="dailyGoalOptions">Daily Learning Goal:</label>
+          <select id="dailyGoalOptions">
+            <option value="5">5 words per day</option>
+            <option value="10">10 words per day</option>
+            <option value="15">15 words per day</option>
+            <option value="20">20 words per day</option>
+            <option value="25">25 words per day</option>
+            <option value="30">30 words per day</option>
+          </select>
+        </div>
+
+        <div class="option-group">
+          <h3>Learning Statistics</h3>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-number" id="totalLearnedStat">0</div>
+              <div class="stat-label">Total Words Learned</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number" id="currentStreakStat">0</div>
+              <div class="stat-label">Current Streak (Days)</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number" id="todayLearnedStat">0</div>
+              <div class="stat-label">Words Learned Today</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Sites Management -->
+      <section id="sites-section" class="option-section">
+        <h2>Site Management</h2>
+        
+        <div class="option-group">
+          <h3>Excluded Sites</h3>
+          <p class="help-text">Add websites where you don't want GlobalFoxTalk to run. Enter one domain per line.</p>
+          <textarea id="excludedSites" placeholder="example.com&#10;another-site.org" rows="6"></textarea>
+          <button id="addCurrentSite" class="secondary-btn">Add Current Site</button>
+        </div>
+      </section>
+
+      <!-- Data Management -->
+      <section id="data-section" class="option-section">
+        <h2>Data Management</h2>
+        
+        <div class="option-group">
+          <h3>Vocabulary Import/Export</h3>
+          <div class="file-actions">
+            <div class="file-action">
+              <label for="vocabImport" class="file-label">
+                <span>Import Vocabulary</span>
+                <input type="file" id="vocabImport" accept=".json,.csv" hidden>
+              </label>
+              <p class="help-text">Import custom vocabulary from JSON or CSV file</p>
+            </div>
+            
+            <div class="file-action">
+              <button id="exportVocab" class="secondary-btn">Export Learned Words</button>
+              <p class="help-text">Export your learned vocabulary as JSON</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="option-group">
+          <h3>Reset Options</h3>
+          <div class="danger-zone">
+            <button id="resetLearningProgress" class="danger-btn">Reset Learning Progress</button>
+            <button id="resetAllSettings" class="danger-btn">Reset All Settings</button>
+            <p class="help-text danger-text">⚠️ These actions cannot be undone!</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="options-footer">
+      <div class="footer-actions">
+        <button id="saveOptions" class="primary-btn">Save All Settings</button>
+        <button id="resetToDefaults" class="secondary-btn">Reset to Defaults</button>
       </div>
-    </section>
-    
-    <div class="actions">
-      <button id="saveOptions">Save Settings</button>
-      <button id="resetOptions">Reset to Defaults</button>
-    </div>
+      <div class="save-status" id="saveStatus"></div>
+    </footer>
   </div>
+  
   <script src="options.js"></script>
 </body>
 </html>

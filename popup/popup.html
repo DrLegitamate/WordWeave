@@ -7,42 +7,94 @@
 <body>
   <div class="popup-container">
     <div class="header">
-      <h1>GlobalFoxTalk</h1>
+      <div class="logo">
+        <h1>GlobalFoxTalk</h1>
+        <div class="version">v1.1.0</div>
+      </div>
       <label class="switch">
         <input type="checkbox" id="enableToggle">
         <span class="slider"></span>
       </label>
     </div>
 
-    <div class="settings-section">
-      <label for="targetLanguage">Target Language:</label>
-      <select id="targetLanguage">
-        <option value="ar">Arabic</option>
-        <option value="zh">Chinese</option>
-        <option value="nl">Dutch</option>
-        <option value="en">English</option>
-        <option value="fr">French</option>
-        <option value="de">German</option>
-        <option value="hi">Hindi</option>
-        <option value="id">Indonesian</option>
-        <option value="it">Italian</option>
-        <option value="ja">Japanese</option>
-        <option value="ko">Korean</option>
-        <option value="pl">Polish</option>
-        <option value="pt">Portuguese</option>
-        <option value="ru">Russian</option>
-        <option value="es">Spanish</option>
-        <option value="tr">Turkish</option>
-        <option value="uk">Ukrainian</option>
-        <option value="vi">Vietnamese</option>
-      </select>
+    <div class="stats-section" id="statsSection">
+      <div class="stat-item">
+        <div class="stat-number" id="wordsToday">0</div>
+        <div class="stat-label">Words Today</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number" id="totalWords">0</div>
+        <div class="stat-label">Total Learned</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number" id="streak">0</div>
+        <div class="stat-label">Day Streak</div>
+      </div>
+    </div>
 
-      <label for="translationRate">Translation Rate:</label>
-      <select id="translationRate">
-        <option value="low">Low</option>
-        <option value="medium">Medium</option>
-        <option value="high">High</option>
-      </select>
+    <div class="progress-section">
+      <div class="progress-label">
+        <span>Daily Goal Progress</span>
+        <span id="progressText">0/10</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="setting-group">
+        <label for="targetLanguage">Target Language:</label>
+        <select id="targetLanguage">
+          <option value="ar">Arabic (العربية)</option>
+          <option value="zh">Chinese (中文)</option>
+          <option value="nl">Dutch (Nederlands)</option>
+          <option value="en">English</option>
+          <option value="fr">French (Français)</option>
+          <option value="de">German (Deutsch)</option>
+          <option value="hi">Hindi (हिन्दी)</option>
+          <option value="id">Indonesian (Bahasa Indonesia)</option>
+          <option value="it">Italian (Italiano)</option>
+          <option value="ja">Japanese (日本語)</option>
+          <option value="ko">Korean (한국어)</option>
+          <option value="pl">Polish (Polski)</option>
+          <option value="pt">Portuguese (Português)</option>
+          <option value="ru">Russian (Русский)</option>
+          <option value="es">Spanish (Español)</option>
+          <option value="tr">Turkish (Türkçe)</option>
+          <option value="uk">Ukrainian (Українська)</option>
+          <option value="vi">Vietnamese (Tiếng Việt)</option>
+        </select>
+      </div>
+
+      <div class="setting-group">
+        <label for="translationRate">Translation Intensity:</label>
+        <select id="translationRate">
+          <option value="low">Light (10%)</option>
+          <option value="medium">Medium (25%)</option>
+          <option value="high">Intensive (40%)</option>
+        </select>
+      </div>
+
+      <div class="setting-group">
+        <label for="dailyGoal">Daily Goal:</label>
+        <select id="dailyGoal">
+          <option value="5">5 words</option>
+          <option value="10">10 words</option>
+          <option value="15">15 words</option>
+          <option value="20">20 words</option>
+          <option value="25">25 words</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button id="openOptions" class="secondary-btn">Advanced Settings</button>
+      <button id="resetProgress" class="danger-btn">Reset Progress</button>
+    </div>
+
+    <div class="footer">
+      <div class="status" id="status">Ready</div>
     </div>
   </div>
   <script src="popup.js"></script>
