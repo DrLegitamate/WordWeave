@@ -297,8 +297,6 @@ class Translator {
   const skipTags = ['SCRIPT', 'STYLE', 'CODE', 'PRE', 'TEXTAREA', 'INPUT', 'SELECT', 'BUTTON', 'NOSCRIPT'];
   const skipClasses = ['no-translate', 'notranslate', 'gt-popup', 'gt-notification'];
   
-  // Add a crucial check: If an element is a descendant of a <button> or an element with role="button", skip it.
-  // This prevents translation of text within interactive elements whose content might be copied to attributes.
   if (element.closest('button, [role="button"]') !== null) {
       return true;
   }
@@ -399,20 +397,22 @@ class Translator {
 
 updateBlockContent(block) {
   const { node, words } = block;
-
+  
   try {
     const originalHTML = node.innerHTML;
     let updatedHTML = originalHTML;
-
+    
     words.forEach(word => {
       const translation = this.translationCache.get(word.toLowerCase());
       if (translation && translation !== word) {
         const regex = new RegExp(`\\b${this.escapeRegExp(word)}\\b`, 'gi');
-        const replacement = `<span class="gt-word" data-original="${this.escapeHtml(word)}" title="${this.escapeHtml(word)}">${this.escapeHtml(translation)}</span>`;
+        
+        // MODIFIED LINE: Removed 'title="${this.escapeHtml(word)}"'
+        const replacement = `<span class="gt-word" data-original="${this.escapeHtml(word)}">${this.escapeHtml(translation)}</span>`;
         updatedHTML = updatedHTML.replace(regex, replacement);
       }
     });
-
+    
     if (updatedHTML !== originalHTML) {
       node.innerHTML = updatedHTML;
       console.log(`GlobalFoxTalk: Updated content in ${node.tagName}`);
