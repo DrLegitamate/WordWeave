@@ -108,7 +108,8 @@ class Translator {
         const addedNodes = mutations
           .filter(m => m.type === 'childList')
           .flatMap(m => Array.from(m.addedNodes))
-          .filter(node => node.nodeType === Node.ELEMENT_NODE);
+          .filter(node => node.nodeType === Node.ELEMENT_NODE)
+          .filter(node => !node.classList?.contains('gt-word')); // Don't process our own elements
         
         if (addedNodes.length > 0) {
           this.processNewNodes(addedNodes);
@@ -169,9 +170,9 @@ class Translator {
           <button class="gt-popup-close">&times;</button>
         </div>
         <div class="gt-popup-body">
-          <div class="gt-original">${original}</div>
+          <div class="gt-original">${this.escapeHtml(original)}</div>
           <div class="gt-arrow">→</div>
-          <div class="gt-translation">${translation}</div>
+          <div class="gt-translation">${this.escapeHtml(translation)}</div>
         </div>
         <div class="gt-popup-actions">
           <button class="gt-learn-btn">Mark as Learned</button>
@@ -237,30 +238,62 @@ class Translator {
   processNewNodes(nodes) {
     if (this.isProcessing) return;
     
-    const textBlocks = nodes
-      .filter(node => this.isSignificantTextBlock(node))
-      .filter(node => !this.processedElements.has(node))
-      .map(node => this.extractTextContent(node));
+    const textNodes = [];
+    
+    nodes.forEach(node => {
+      if (this.isSignificantTextNode(node)) {
+        textNodes.push(node);
+      } else {
+        // Find text nodes within the element
+        const walker = document.createTreeWalker(
+          node,
+          NodeFilter.SHOW_TEXT,
+          {
+            acceptNode: (textNode) => {
+              return this.isValidTextNode(textNode) ? 
+                NodeFilter.FILTER_ACCEPT : 
+                NodeFilter.FILTER_REJECT;
+            }
+          }
+        );
+        
+        let textNode;
+        while (textNode = walker.nextNode()) {
+          textNodes.push(textNode);
+        }
+      }
+    });
 
-    if (textBlocks.length > 0) {
-      this.translateTextBlocks(textBlocks);
+    if (textNodes.length > 0) {
+      this.translateTextNodes(textNodes);
     }
   }
 
-  isSignificantTextBlock(node) {
-    if (!node || !node.textContent?.trim()) return false;
-    if (this.shouldSkipElement(node)) return false;
-    if (node.classList?.contains('gt-word')) return false;
+  isSignificantTextNode(node) {
+    return node.nodeType === Node.TEXT_NODE && 
+           this.isValidTextNode(node);
+  }
 
-    // Check translation settings
-    if (!this.state.translateHeaders && this.isHeaderElement(node)) return false;
-    if (!this.state.translateNav && this.isNavigationElement(node)) return false;
-
-    // Only translate significant text blocks
-    const significantTags = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'TD', 'DIV', 'SPAN', 'A'];
-    const wordCount = node.textContent.trim().split(/\s+/).length;
+  isValidTextNode(textNode) {
+    if (!textNode.textContent?.trim()) return false;
     
-    return significantTags.includes(node.tagName) && wordCount >= 3 && wordCount <= 100;
+    const parent = textNode.parentElement;
+    if (!parent) return false;
+    
+    // Skip if parent is already processed or should be skipped
+    if (this.shouldSkipElement(parent)) return false;
+    if (this.processedElements.has(parent)) return false;
+    if (parent.classList?.contains('gt-word')) return false;
+    
+    // Check translation settings
+    if (!this.state.translateHeaders && this.isHeaderElement(parent)) return false;
+    if (!this.state.translateNav && this.isNavigationElement(parent)) return false;
+    
+    // Only process text nodes with meaningful content
+    const text = textNode.textContent.trim();
+    const wordCount = text.split(/\s+/).length;
+    
+    return wordCount >= 1 && wordCount <= 50 && text.length >= 3;
   }
 
   isHeaderElement(element) {
@@ -291,38 +324,27 @@ class Translator {
            element.closest('[translate="no"]') !== null;
   }
 
-  extractTextContent(node) {
-    const text = node.textContent.trim();
-    const words = text.split(/\s+/).filter(word => 
-      word.length > 2 && 
-      /^[a-zA-Z]+$/.test(word) && 
-      !this.state.learnedWords[word.toLowerCase()]
-    );
-    
-    return {
-      node,
-      text,
-      words
-    };
-  }
-
-  async translateTextBlocks(blocks) {
+  async translateTextNodes(textNodes) {
     if (!this.state?.enabled || this.isProcessing) return;
     
     this.isProcessing = true;
     const translationRate = this.getTranslationRate();
     
     try {
-      for (const block of blocks) {
+      for (const textNode of textNodes) {
         if (!this.state.enabled) break; // Check if disabled during processing
         
-        const wordsToTranslate = block.words
+        const text = textNode.textContent.trim();
+        const words = this.extractWords(text);
+        
+        const wordsToTranslate = words
           .filter(() => Math.random() < translationRate)
           .filter(word => !this.translationCache.has(word.toLowerCase()))
-          .slice(0, 5); // Limit to 5 words per block to avoid overwhelming
+          .filter(word => !this.state.learnedWords[word.toLowerCase()])
+          .slice(0, 3); // Limit to 3 words per text node
 
         if (wordsToTranslate.length === 0) {
-          this.processedElements.add(block.node);
+          this.processedElements.add(textNode.parentElement);
           continue;
         }
 
@@ -330,25 +352,29 @@ class Translator {
           const translations = await this.batchTranslate(wordsToTranslate);
           
           wordsToTranslate.forEach((word, i) => {
-            if (translations[i]) {
+            if (translations[i] && translations[i] !== word) {
               this.translationCache.set(word.toLowerCase(), translations[i]);
             }
           });
 
-          this.updateBlockContent(block);
-          this.processedElements.add(block.node);
+          this.updateTextNodeContent(textNode, wordsToTranslate);
+          this.processedElements.add(textNode.parentElement);
           
           // Small delay to prevent overwhelming the page
           await new Promise(resolve => setTimeout(resolve, 100));
           
         } catch (error) {
-          console.error('Block translation error:', error);
-          this.processedElements.add(block.node); // Mark as processed to avoid retry
+          console.error('Text node translation error:', error);
+          this.processedElements.add(textNode.parentElement); // Mark as processed to avoid retry
         }
       }
     } finally {
       this.isProcessing = false;
     }
+  }
+
+  extractWords(text) {
+    return text.match(/\b[a-zA-ZÀ-ÿ]+\b/g) || [];
   }
 
   async batchTranslate(words) {
@@ -371,25 +397,52 @@ class Translator {
     }
   }
 
-  updateBlockContent(block) {
-    const { node, words } = block;
-    
+  updateTextNodeContent(textNode, wordsToTranslate) {
     try {
-      const originalHTML = node.innerHTML;
-      let updatedHTML = originalHTML;
+      const parent = textNode.parentElement;
+      if (!parent) return;
       
-      words.forEach(word => {
+      let text = textNode.textContent;
+      
+      // Create a document fragment to build the new content
+      const fragment = document.createDocumentFragment();
+      let lastIndex = 0;
+      
+      wordsToTranslate.forEach(word => {
         const translation = this.translationCache.get(word.toLowerCase());
-        if (translation && translation !== word) {
-          const regex = new RegExp(`\\b${this.escapeRegExp(word)}\\b`, 'gi');
-          const replacement = `<span class="gt-word" data-original="${word}" title="${word}">${translation}</span>`;
-          updatedHTML = updatedHTML.replace(regex, replacement);
+        if (!translation || translation === word) return;
+        
+        const regex = new RegExp(`\\b${this.escapeRegExp(word)}\\b`, 'i');
+        const match = text.substring(lastIndex).match(regex);
+        
+        if (match) {
+          const matchIndex = lastIndex + match.index;
+          
+          // Add text before the match
+          if (matchIndex > lastIndex) {
+            fragment.appendChild(document.createTextNode(text.substring(lastIndex, matchIndex)));
+          }
+          
+          // Create translated word element
+          const span = document.createElement('span');
+          span.className = 'gt-word';
+          span.setAttribute('data-original', word);
+          span.setAttribute('title', word);
+          span.textContent = translation;
+          fragment.appendChild(span);
+          
+          lastIndex = matchIndex + match[0].length;
         }
       });
       
-      if (updatedHTML !== originalHTML) {
-        node.innerHTML = updatedHTML;
+      // Add remaining text
+      if (lastIndex < text.length) {
+        fragment.appendChild(document.createTextNode(text.substring(lastIndex)));
       }
+      
+      // Replace the text node with the fragment
+      parent.replaceChild(fragment, textNode);
+      
     } catch (error) {
       console.error('Content update failed:', error);
     }
@@ -397,6 +450,12 @@ class Translator {
 
   escapeRegExp(string) {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
   }
 
   getTranslationRate() {
@@ -411,14 +470,30 @@ class Translator {
   processPage() {
     if (!this.state?.enabled || this.isProcessing) return;
     
-    const textBlocks = Array.from(document.body.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, td, div, span'))
-      .filter(node => this.isSignificantTextBlock(node))
-      .filter(node => !this.processedElements.has(node))
-      .map(node => this.extractTextContent(node))
-      .slice(0, 20); // Limit initial processing
-
-    if (textBlocks.length > 0) {
-      this.translateTextBlocks(textBlocks);
+    // Find all text nodes in the document
+    const walker = document.createTreeWalker(
+      document.body,
+      NodeFilter.SHOW_TEXT,
+      {
+        acceptNode: (textNode) => {
+          return this.isValidTextNode(textNode) ? 
+            NodeFilter.FILTER_ACCEPT : 
+            NodeFilter.FILTER_REJECT;
+        }
+      }
+    );
+    
+    const textNodes = [];
+    let textNode;
+    while (textNode = walker.nextNode()) {
+      textNodes.push(textNode);
+    }
+    
+    // Limit initial processing to prevent overwhelming
+    const limitedTextNodes = textNodes.slice(0, 50);
+    
+    if (limitedTextNodes.length > 0) {
+      this.translateTextNodes(limitedTextNodes);
     }
   }
 
@@ -427,7 +502,8 @@ class Translator {
     translatedElements.forEach(element => {
       const original = element.getAttribute('data-original');
       if (original) {
-        element.outerHTML = original;
+        const textNode = document.createTextNode(original);
+        element.parentNode.replaceChild(textNode, element);
       }
     });
     
