@@ -32,6 +32,8 @@ class Translator {
         return;
       }
       
+      console.log('GlobalFoxTalk: Extension initialized, enabled:', this.state.enabled);
+      
       this.setupMessageListener();
       this.setupMutationObserver();
       this.setupContextMenuHandler();
@@ -64,6 +66,8 @@ class Translator {
   handleStateUpdate(newState) {
     const wasEnabled = this.state?.enabled;
     this.state = newState;
+    
+    console.log('GlobalFoxTalk: State updated, enabled:', newState.enabled);
     
     // If extension was just enabled, process the page
     if (!wasEnabled && newState.enabled) {
@@ -239,58 +243,35 @@ class Translator {
   processNewNodes(nodes) {
     if (this.isProcessing) return;
     
-    const textNodes = [];
-    
-    nodes.forEach(node => {
-      this.findTextNodesInElement(node, textNodes);
-    });
+    const textBlocks = nodes
+      .filter(node => this.isSignificantTextBlock(node))
+      .filter(node => !this.processedElements.has(node))
+      .map(node => this.extractTextContent(node));
 
-    if (textNodes.length > 0) {
-      this.translateTextNodes(textNodes);
+    if (textBlocks.length > 0) {
+      this.translateTextBlocks(textBlocks);
     }
   }
 
-  findTextNodesInElement(element, textNodes) {
-    if (this.shouldSkipElement(element)) return;
-    
-    const walker = document.createTreeWalker(
-      element,
-      NodeFilter.SHOW_TEXT,
-      {
-        acceptNode: (textNode) => {
-          return this.isValidTextNode(textNode) ? 
-            NodeFilter.FILTER_ACCEPT : 
-            NodeFilter.FILTER_REJECT;
-        }
-      }
-    );
-    
-    let textNode;
-    while (textNode = walker.nextNode()) {
-      textNodes.push(textNode);
-    }
-  }
+  isSignificantTextBlock(node) {
+    if (!node || !node.textContent?.trim()) return false;
+    if (this.shouldSkipElement(node)) return false;
+    if (node.classList?.contains('gt-word')) return false;
 
-  isValidTextNode(textNode) {
-    if (!textNode.textContent?.trim()) return false;
-    
-    const parent = textNode.parentElement;
-    if (!parent) return false;
-    
-    // Skip if parent should be skipped
-    if (this.shouldSkipElement(parent)) return false;
-    if (parent.classList?.contains('gt-word')) return false;
-    
     // Check translation settings
-    if (!this.state.translateHeaders && this.isHeaderElement(parent)) return false;
-    if (!this.state.translateNav && this.isNavigationElement(parent)) return false;
-    
-    // Only process text nodes with meaningful content
-    const text = textNode.textContent.trim();
+    if (!this.state.translateHeaders && this.isHeaderElement(node)) return false;
+    if (!this.state.translateNav && this.isNavigationElement(node)) return false;
+
+    // Accept more content types for better body text coverage
+    const significantTags = ['P', 'DIV', 'SPAN', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'TD', 'TH', 'A', 'STRONG', 'EM', 'B', 'I'];
+    const text = node.textContent.trim();
     const wordCount = text.split(/\s+/).length;
     
-    // More lenient criteria for body text
-    return text.length >= 2 && wordCount >= 1 && wordCount <= 100;
+    // More lenient criteria - accept shorter text blocks too
+    return significantTags.includes(node.tagName) && 
+           text.length >= 10 && 
+           wordCount >= 2 && 
+           wordCount <= 200;
   }
 
   isHeaderElement(element) {
@@ -314,87 +295,53 @@ class Translator {
     if (!element) return true;
     
     const skipTags = ['SCRIPT', 'STYLE', 'CODE', 'PRE', 'TEXTAREA', 'INPUT', 'SELECT', 'BUTTON', 'NOSCRIPT'];
-    const skipClasses = ['no-translate', 'notranslate', 'gt-popup', 'gt-notification', 'sidebar', 'footer', 'advertisement', 'ad'];
+    const skipClasses = ['no-translate', 'notranslate', 'gt-popup', 'gt-notification'];
     
     return skipTags.includes(element.tagName) ||
            skipClasses.some(cls => element.classList?.contains(cls)) ||
            element.isContentEditable ||
            element.getAttribute('translate') === 'no' ||
-           element.closest('[translate="no"]') !== null ||
-           element.style.display === 'none' ||
-           element.style.visibility === 'hidden';
+           element.closest('[translate="no"]') !== null;
   }
 
-  findMainContentAreas() {
-    // Common selectors for main content areas
-    const contentSelectors = [
-      'main',
-      'article',
-      '[role="main"]',
-      '.content',
-      '.main-content',
-      '.article-content',
-      '.post-content',
-      '.entry-content',
-      '.page-content',
-      '.story-body',
-      '.article-body',
-      '#content',
-      '#main',
-      '#article',
-      '.text',
-      '.body',
-      'p', // Fallback to all paragraphs
-      'div' // Last resort
-    ];
-
-    for (const selector of contentSelectors) {
-      const elements = document.querySelectorAll(selector);
-      if (elements.length > 0) {
-        // Filter out elements that are likely not main content
-        const validElements = Array.from(elements).filter(el => {
-          const text = el.textContent?.trim();
-          return text && 
-                 text.length > 50 && // Minimum content length
-                 !this.shouldSkipElement(el) &&
-                 !this.isHeaderElement(el) &&
-                 !this.isNavigationElement(el);
-        });
-        
-        if (validElements.length > 0) {
-          console.log(`GlobalFoxTalk: Found content using selector: ${selector}`);
-          return validElements;
-        }
-      }
-    }
+  extractTextContent(node) {
+    const text = node.textContent.trim();
+    const words = text.match(/\b[a-zA-ZÀ-ÿĀ-žА-я]+\b/g) || [];
     
-    return [];
+    // Filter words that are meaningful and not already learned
+    const validWords = words.filter(word => 
+      word.length > 2 && 
+      word.length < 20 &&
+      /^[a-zA-ZÀ-ÿĀ-žА-я]+$/.test(word) && 
+      !this.state.learnedWords[word.toLowerCase()]
+    );
+    
+    return {
+      node,
+      text,
+      words: validWords
+    };
   }
 
-  async translateTextNodes(textNodes) {
+  async translateTextBlocks(blocks) {
     if (!this.state?.enabled || this.isProcessing) return;
     
     this.isProcessing = true;
     const translationRate = this.getTranslationRate();
     
+    console.log(`GlobalFoxTalk: Processing ${blocks.length} text blocks`);
+    
     try {
-      for (const textNode of textNodes) {
+      for (const block of blocks) {
         if (!this.state.enabled) break; // Check if disabled during processing
         
-        // Skip if parent is already processed
-        if (this.processedElements.has(textNode.parentElement)) continue;
-        
-        const text = textNode.textContent.trim();
-        const words = this.extractWords(text);
-        
-        const wordsToTranslate = words
+        const wordsToTranslate = block.words
           .filter(() => Math.random() < translationRate)
           .filter(word => !this.translationCache.has(word.toLowerCase()))
-          .filter(word => !this.state.learnedWords[word.toLowerCase()])
-          .slice(0, 5); // Increased to 5 words per text node
+          .slice(0, 3); // Limit to 3 words per block to avoid overwhelming
 
         if (wordsToTranslate.length === 0) {
-          this.processedElements.add(textNode.parentElement);
+          this.processedElements.add(block.node);
           continue;
         }
 
@@ -407,25 +354,21 @@ class Translator {
             }
           });
 
-          this.updateTextNodeContent(textNode, wordsToTranslate);
-          this.processedElements.add(textNode.parentElement);
+          this.updateBlockContent(block);
+          this.processedElements.add(block.node);
           
           // Small delay to prevent overwhelming the page
-          await new Promise(resolve => setTimeout(resolve, 50));
+          await new Promise(resolve => setTimeout(resolve, 100));
           
         } catch (error) {
-          console.error('Text node translation error:', error);
-          this.processedElements.add(textNode.parentElement); // Mark as processed to avoid retry
+          console.error('Block translation error:', error);
+          this.processedElements.add(block.node); // Mark as processed to avoid retry
         }
       }
     } finally {
       this.isProcessing = false;
+      console.log('GlobalFoxTalk: Finished processing text blocks');
     }
-  }
-
-  extractWords(text) {
-    // More comprehensive word extraction including accented characters
-    return text.match(/\b[a-zA-ZÀ-ÿĀ-žА-я]+\b/g) || [];
   }
 
   async batchTranslate(words) {
@@ -448,58 +391,26 @@ class Translator {
     }
   }
 
-  updateTextNodeContent(textNode, wordsToTranslate) {
+  updateBlockContent(block) {
+    const { node, words } = block;
+    
     try {
-      const parent = textNode.parentElement;
-      if (!parent) return;
+      const originalHTML = node.innerHTML;
+      let updatedHTML = originalHTML;
       
-      let text = textNode.textContent;
-      
-      // Create a document fragment to build the new content
-      const fragment = document.createDocumentFragment();
-      let lastIndex = 0;
-      
-      // Sort words by their position in the text to process them in order
-      const wordPositions = wordsToTranslate.map(word => {
-        const regex = new RegExp(`\\b${this.escapeRegExp(word)}\\b`, 'i');
-        const match = text.match(regex);
-        return {
-          word,
-          index: match ? text.indexOf(match[0]) : -1,
-          match: match ? match[0] : null
-        };
-      }).filter(item => item.index !== -1).sort((a, b) => a.index - b.index);
-      
-      wordPositions.forEach(({ word, index, match }) => {
+      words.forEach(word => {
         const translation = this.translationCache.get(word.toLowerCase());
-        if (!translation || translation === word) return;
-        
-        // Add text before the match
-        if (index > lastIndex) {
-          fragment.appendChild(document.createTextNode(text.substring(lastIndex, index)));
+        if (translation && translation !== word) {
+          const regex = new RegExp(`\\b${this.escapeRegExp(word)}\\b`, 'gi');
+          const replacement = `<span class="gt-word" data-original="${this.escapeHtml(word)}" title="${this.escapeHtml(word)}">${this.escapeHtml(translation)}</span>`;
+          updatedHTML = updatedHTML.replace(regex, replacement);
         }
-        
-        // Create translated word element
-        const span = document.createElement('span');
-        span.className = 'gt-word';
-        span.setAttribute('data-original', match);
-        span.setAttribute('title', match);
-        span.textContent = translation;
-        fragment.appendChild(span);
-        
-        lastIndex = index + match.length;
       });
       
-      // Add remaining text
-      if (lastIndex < text.length) {
-        fragment.appendChild(document.createTextNode(text.substring(lastIndex)));
+      if (updatedHTML !== originalHTML) {
+        node.innerHTML = updatedHTML;
+        console.log(`GlobalFoxTalk: Updated content in ${node.tagName}`);
       }
-      
-      // Only replace if we actually made changes
-      if (wordPositions.length > 0) {
-        parent.replaceChild(fragment, textNode);
-      }
-      
     } catch (error) {
       console.error('Content update failed:', error);
     }
@@ -527,73 +438,35 @@ class Translator {
   processPage() {
     if (!this.state?.enabled || this.isProcessing) return;
     
-    console.log('GlobalFoxTalk: Processing page...');
+    console.log('GlobalFoxTalk: Starting page processing...');
     
-    // First, try to find main content areas
-    const contentAreas = this.findMainContentAreas();
+    // Simple approach: find all text-containing elements
+    const allElements = document.querySelectorAll('p, div, span, h1, h2, h3, h4, h5, h6, li, td, th, a, strong, em, b, i');
     
-    if (contentAreas.length > 0) {
-      console.log(`GlobalFoxTalk: Found ${contentAreas.length} content areas`);
-      
-      const textNodes = [];
-      contentAreas.forEach(area => {
-        this.findTextNodesInElement(area, textNodes);
-      });
-      
-      console.log(`GlobalFoxTalk: Found ${textNodes.length} text nodes to process`);
-      
-      if (textNodes.length > 0) {
-        // Process in batches to avoid overwhelming
-        const batchSize = 20;
-        for (let i = 0; i < textNodes.length; i += batchSize) {
-          const batch = textNodes.slice(i, i + batchSize);
-          setTimeout(() => {
-            if (this.state?.enabled) {
-              this.translateTextNodes(batch);
-            }
-          }, i * 100); // Stagger processing
-        }
-      }
+    const textBlocks = Array.from(allElements)
+      .filter(node => this.isSignificantTextBlock(node))
+      .filter(node => !this.processedElements.has(node))
+      .map(node => this.extractTextContent(node))
+      .filter(block => block.words.length > 0)
+      .slice(0, 50); // Limit initial processing to first 50 blocks
+
+    console.log(`GlobalFoxTalk: Found ${textBlocks.length} text blocks to process`);
+
+    if (textBlocks.length > 0) {
+      this.translateTextBlocks(textBlocks);
     } else {
-      console.log('GlobalFoxTalk: No main content areas found, processing entire body');
-      
-      // Fallback: process entire body
-      const walker = document.createTreeWalker(
-        document.body,
-        NodeFilter.SHOW_TEXT,
-        {
-          acceptNode: (textNode) => {
-            return this.isValidTextNode(textNode) ? 
-              NodeFilter.FILTER_ACCEPT : 
-              NodeFilter.FILTER_REJECT;
-          }
-        }
-      );
-      
-      const textNodes = [];
-      let textNode;
-      while (textNode = walker.nextNode()) {
-        textNodes.push(textNode);
-      }
-      
-      console.log(`GlobalFoxTalk: Found ${textNodes.length} text nodes in body`);
-      
-      // Limit initial processing to prevent overwhelming
-      const limitedTextNodes = textNodes.slice(0, 100);
-      
-      if (limitedTextNodes.length > 0) {
-        this.translateTextNodes(limitedTextNodes);
-      }
+      console.log('GlobalFoxTalk: No suitable text blocks found for translation');
     }
   }
 
   restoreOriginalContent() {
+    console.log('GlobalFoxTalk: Restoring original content');
+    
     const translatedElements = document.querySelectorAll('.gt-word');
     translatedElements.forEach(element => {
       const original = element.getAttribute('data-original');
       if (original) {
-        const textNode = document.createTextNode(original);
-        element.parentNode.replaceChild(textNode, element);
+        element.outerHTML = original;
       }
     });
     
