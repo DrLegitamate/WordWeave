@@ -391,30 +391,30 @@ class Translator {
     }
   }
 
-  updateBlockContent(block) {
-    const { node, words } = block;
-    
-    try {
-      const originalHTML = node.innerHTML;
-      let updatedHTML = originalHTML;
-      
-      words.forEach(word => {
-        const translation = this.translationCache.get(word.toLowerCase());
-        if (translation && translation !== word) {
-          const regex = new RegExp(`\\b${this.escapeRegExp(word)}\\b`, 'gi');
-          const replacement = `<span class="gt-word" data-original="${this.escapeHtml(word)}" title="${this.escapeHtml(word)}">${this.escapeHtml(translation)}</span>`;
-          updatedHTML = updatedHTML.replace(regex, replacement);
-        }
-      });
-      
-      if (updatedHTML !== originalHTML) {
-        node.innerHTML = updatedHTML;
-        console.log(`GlobalFoxTalk: Updated content in ${node.tagName}`);
+updateBlockContent(block) {
+  const { node, words } = block;
+
+  try {
+    const originalHTML = node.innerHTML;
+    let updatedHTML = originalHTML;
+
+    words.forEach(word => {
+      const translation = this.translationCache.get(word.toLowerCase());
+      if (translation && translation !== word) {
+        const regex = new RegExp(`\\b${this.escapeRegExp(word)}\\b`, 'gi');
+        const replacement = `<span class="gt-word" data-original="${this.escapeHtml(word)}" title="${this.escapeHtml(word)}">${this.escapeHtml(translation)}</span>`;
+        updatedHTML = updatedHTML.replace(regex, replacement);
       }
-    } catch (error) {
-      console.error('Content update failed:', error);
+    });
+
+    if (updatedHTML !== originalHTML) {
+      node.innerHTML = updatedHTML;
+      console.log(`GlobalFoxTalk: Updated content in ${node.tagName}`);
     }
+  } catch (error) {
+    console.error('Content update failed:', error);
   }
+}
 
   escapeRegExp(string) {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
