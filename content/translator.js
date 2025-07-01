@@ -38,7 +38,8 @@ class Translator {
       
       // Process page if extension is enabled
       if (this.state.enabled) {
-        this.processPage();
+        // Wait a bit for page to fully load
+        setTimeout(() => this.processPage(), 1000);
       }
       
     } catch (error) {
@@ -66,7 +67,7 @@ class Translator {
     
     // If extension was just enabled, process the page
     if (!wasEnabled && newState.enabled) {
-      this.processPage();
+      setTimeout(() => this.processPage(), 500);
     }
     
     // If extension was disabled, restore original content
@@ -114,7 +115,7 @@ class Translator {
         if (addedNodes.length > 0) {
           this.processNewNodes(addedNodes);
         }
-      }, 500);
+      }, 1000);
     });
 
     this.observer.observe(document.body, {
@@ -241,27 +242,7 @@ class Translator {
     const textNodes = [];
     
     nodes.forEach(node => {
-      if (this.isSignificantTextNode(node)) {
-        textNodes.push(node);
-      } else {
-        // Find text nodes within the element
-        const walker = document.createTreeWalker(
-          node,
-          NodeFilter.SHOW_TEXT,
-          {
-            acceptNode: (textNode) => {
-              return this.isValidTextNode(textNode) ? 
-                NodeFilter.FILTER_ACCEPT : 
-                NodeFilter.FILTER_REJECT;
-            }
-          }
-        );
-        
-        let textNode;
-        while (textNode = walker.nextNode()) {
-          textNodes.push(textNode);
-        }
-      }
+      this.findTextNodesInElement(node, textNodes);
     });
 
     if (textNodes.length > 0) {
@@ -269,9 +250,25 @@ class Translator {
     }
   }
 
-  isSignificantTextNode(node) {
-    return node.nodeType === Node.TEXT_NODE && 
-           this.isValidTextNode(node);
+  findTextNodesInElement(element, textNodes) {
+    if (this.shouldSkipElement(element)) return;
+    
+    const walker = document.createTreeWalker(
+      element,
+      NodeFilter.SHOW_TEXT,
+      {
+        acceptNode: (textNode) => {
+          return this.isValidTextNode(textNode) ? 
+            NodeFilter.FILTER_ACCEPT : 
+            NodeFilter.FILTER_REJECT;
+        }
+      }
+    );
+    
+    let textNode;
+    while (textNode = walker.nextNode()) {
+      textNodes.push(textNode);
+    }
   }
 
   isValidTextNode(textNode) {
@@ -280,9 +277,8 @@ class Translator {
     const parent = textNode.parentElement;
     if (!parent) return false;
     
-    // Skip if parent is already processed or should be skipped
+    // Skip if parent should be skipped
     if (this.shouldSkipElement(parent)) return false;
-    if (this.processedElements.has(parent)) return false;
     if (parent.classList?.contains('gt-word')) return false;
     
     // Check translation settings
@@ -293,14 +289,16 @@ class Translator {
     const text = textNode.textContent.trim();
     const wordCount = text.split(/\s+/).length;
     
-    return wordCount >= 1 && wordCount <= 50 && text.length >= 3;
+    // More lenient criteria for body text
+    return text.length >= 2 && wordCount >= 1 && wordCount <= 100;
   }
 
   isHeaderElement(element) {
     return /^H[1-6]$/.test(element.tagName) || 
            element.closest('header') !== null ||
            element.classList.contains('header') ||
-           element.classList.contains('title');
+           element.classList.contains('title') ||
+           element.classList.contains('headline');
   }
 
   isNavigationElement(element) {
@@ -308,20 +306,69 @@ class Translator {
            element.closest('nav') !== null ||
            element.classList.contains('nav') ||
            element.classList.contains('menu') ||
+           element.classList.contains('navigation') ||
            element.getAttribute('role') === 'navigation';
   }
 
   shouldSkipElement(element) {
     if (!element) return true;
     
-    const skipTags = ['SCRIPT', 'STYLE', 'CODE', 'PRE', 'TEXTAREA', 'INPUT', 'SELECT', 'BUTTON'];
-    const skipClasses = ['no-translate', 'notranslate', 'gt-popup', 'gt-notification'];
+    const skipTags = ['SCRIPT', 'STYLE', 'CODE', 'PRE', 'TEXTAREA', 'INPUT', 'SELECT', 'BUTTON', 'NOSCRIPT'];
+    const skipClasses = ['no-translate', 'notranslate', 'gt-popup', 'gt-notification', 'sidebar', 'footer', 'advertisement', 'ad'];
     
     return skipTags.includes(element.tagName) ||
            skipClasses.some(cls => element.classList?.contains(cls)) ||
            element.isContentEditable ||
            element.getAttribute('translate') === 'no' ||
-           element.closest('[translate="no"]') !== null;
+           element.closest('[translate="no"]') !== null ||
+           element.style.display === 'none' ||
+           element.style.visibility === 'hidden';
+  }
+
+  findMainContentAreas() {
+    // Common selectors for main content areas
+    const contentSelectors = [
+      'main',
+      'article',
+      '[role="main"]',
+      '.content',
+      '.main-content',
+      '.article-content',
+      '.post-content',
+      '.entry-content',
+      '.page-content',
+      '.story-body',
+      '.article-body',
+      '#content',
+      '#main',
+      '#article',
+      '.text',
+      '.body',
+      'p', // Fallback to all paragraphs
+      'div' // Last resort
+    ];
+
+    for (const selector of contentSelectors) {
+      const elements = document.querySelectorAll(selector);
+      if (elements.length > 0) {
+        // Filter out elements that are likely not main content
+        const validElements = Array.from(elements).filter(el => {
+          const text = el.textContent?.trim();
+          return text && 
+                 text.length > 50 && // Minimum content length
+                 !this.shouldSkipElement(el) &&
+                 !this.isHeaderElement(el) &&
+                 !this.isNavigationElement(el);
+        });
+        
+        if (validElements.length > 0) {
+          console.log(`GlobalFoxTalk: Found content using selector: ${selector}`);
+          return validElements;
+        }
+      }
+    }
+    
+    return [];
   }
 
   async translateTextNodes(textNodes) {
@@ -334,6 +381,9 @@ class Translator {
       for (const textNode of textNodes) {
         if (!this.state.enabled) break; // Check if disabled during processing
         
+        // Skip if parent is already processed
+        if (this.processedElements.has(textNode.parentElement)) continue;
+        
         const text = textNode.textContent.trim();
         const words = this.extractWords(text);
         
@@ -341,7 +391,7 @@ class Translator {
           .filter(() => Math.random() < translationRate)
           .filter(word => !this.translationCache.has(word.toLowerCase()))
           .filter(word => !this.state.learnedWords[word.toLowerCase()])
-          .slice(0, 3); // Limit to 3 words per text node
+          .slice(0, 5); // Increased to 5 words per text node
 
         if (wordsToTranslate.length === 0) {
           this.processedElements.add(textNode.parentElement);
@@ -361,7 +411,7 @@ class Translator {
           this.processedElements.add(textNode.parentElement);
           
           // Small delay to prevent overwhelming the page
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise(resolve => setTimeout(resolve, 50));
           
         } catch (error) {
           console.error('Text node translation error:', error);
@@ -374,7 +424,8 @@ class Translator {
   }
 
   extractWords(text) {
-    return text.match(/\b[a-zA-ZÀ-ÿ]+\b/g) || [];
+    // More comprehensive word extraction including accented characters
+    return text.match(/\b[a-zA-ZÀ-ÿĀ-žА-я]+\b/g) || [];
   }
 
   async batchTranslate(words) {
@@ -408,31 +459,35 @@ class Translator {
       const fragment = document.createDocumentFragment();
       let lastIndex = 0;
       
-      wordsToTranslate.forEach(word => {
+      // Sort words by their position in the text to process them in order
+      const wordPositions = wordsToTranslate.map(word => {
+        const regex = new RegExp(`\\b${this.escapeRegExp(word)}\\b`, 'i');
+        const match = text.match(regex);
+        return {
+          word,
+          index: match ? text.indexOf(match[0]) : -1,
+          match: match ? match[0] : null
+        };
+      }).filter(item => item.index !== -1).sort((a, b) => a.index - b.index);
+      
+      wordPositions.forEach(({ word, index, match }) => {
         const translation = this.translationCache.get(word.toLowerCase());
         if (!translation || translation === word) return;
         
-        const regex = new RegExp(`\\b${this.escapeRegExp(word)}\\b`, 'i');
-        const match = text.substring(lastIndex).match(regex);
-        
-        if (match) {
-          const matchIndex = lastIndex + match.index;
-          
-          // Add text before the match
-          if (matchIndex > lastIndex) {
-            fragment.appendChild(document.createTextNode(text.substring(lastIndex, matchIndex)));
-          }
-          
-          // Create translated word element
-          const span = document.createElement('span');
-          span.className = 'gt-word';
-          span.setAttribute('data-original', word);
-          span.setAttribute('title', word);
-          span.textContent = translation;
-          fragment.appendChild(span);
-          
-          lastIndex = matchIndex + match[0].length;
+        // Add text before the match
+        if (index > lastIndex) {
+          fragment.appendChild(document.createTextNode(text.substring(lastIndex, index)));
         }
+        
+        // Create translated word element
+        const span = document.createElement('span');
+        span.className = 'gt-word';
+        span.setAttribute('data-original', match);
+        span.setAttribute('title', match);
+        span.textContent = translation;
+        fragment.appendChild(span);
+        
+        lastIndex = index + match.length;
       });
       
       // Add remaining text
@@ -440,8 +495,10 @@ class Translator {
         fragment.appendChild(document.createTextNode(text.substring(lastIndex)));
       }
       
-      // Replace the text node with the fragment
-      parent.replaceChild(fragment, textNode);
+      // Only replace if we actually made changes
+      if (wordPositions.length > 0) {
+        parent.replaceChild(fragment, textNode);
+      }
       
     } catch (error) {
       console.error('Content update failed:', error);
@@ -460,40 +517,73 @@ class Translator {
 
   getTranslationRate() {
     const rates = {
-      low: 0.1,
-      medium: 0.25,
-      high: 0.4
+      low: 0.15,
+      medium: 0.3,
+      high: 0.5
     };
-    return rates[this.state?.translationRate] || 0.25;
+    return rates[this.state?.translationRate] || 0.3;
   }
 
   processPage() {
     if (!this.state?.enabled || this.isProcessing) return;
     
-    // Find all text nodes in the document
-    const walker = document.createTreeWalker(
-      document.body,
-      NodeFilter.SHOW_TEXT,
-      {
-        acceptNode: (textNode) => {
-          return this.isValidTextNode(textNode) ? 
-            NodeFilter.FILTER_ACCEPT : 
-            NodeFilter.FILTER_REJECT;
+    console.log('GlobalFoxTalk: Processing page...');
+    
+    // First, try to find main content areas
+    const contentAreas = this.findMainContentAreas();
+    
+    if (contentAreas.length > 0) {
+      console.log(`GlobalFoxTalk: Found ${contentAreas.length} content areas`);
+      
+      const textNodes = [];
+      contentAreas.forEach(area => {
+        this.findTextNodesInElement(area, textNodes);
+      });
+      
+      console.log(`GlobalFoxTalk: Found ${textNodes.length} text nodes to process`);
+      
+      if (textNodes.length > 0) {
+        // Process in batches to avoid overwhelming
+        const batchSize = 20;
+        for (let i = 0; i < textNodes.length; i += batchSize) {
+          const batch = textNodes.slice(i, i + batchSize);
+          setTimeout(() => {
+            if (this.state?.enabled) {
+              this.translateTextNodes(batch);
+            }
+          }, i * 100); // Stagger processing
         }
       }
-    );
-    
-    const textNodes = [];
-    let textNode;
-    while (textNode = walker.nextNode()) {
-      textNodes.push(textNode);
-    }
-    
-    // Limit initial processing to prevent overwhelming
-    const limitedTextNodes = textNodes.slice(0, 50);
-    
-    if (limitedTextNodes.length > 0) {
-      this.translateTextNodes(limitedTextNodes);
+    } else {
+      console.log('GlobalFoxTalk: No main content areas found, processing entire body');
+      
+      // Fallback: process entire body
+      const walker = document.createTreeWalker(
+        document.body,
+        NodeFilter.SHOW_TEXT,
+        {
+          acceptNode: (textNode) => {
+            return this.isValidTextNode(textNode) ? 
+              NodeFilter.FILTER_ACCEPT : 
+              NodeFilter.FILTER_REJECT;
+          }
+        }
+      );
+      
+      const textNodes = [];
+      let textNode;
+      while (textNode = walker.nextNode()) {
+        textNodes.push(textNode);
+      }
+      
+      console.log(`GlobalFoxTalk: Found ${textNodes.length} text nodes in body`);
+      
+      // Limit initial processing to prevent overwhelming
+      const limitedTextNodes = textNodes.slice(0, 100);
+      
+      if (limitedTextNodes.length > 0) {
+        this.translateTextNodes(limitedTextNodes);
+      }
     }
   }
 
