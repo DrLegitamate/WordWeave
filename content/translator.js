@@ -32,7 +32,8 @@ class Translator {
       if (!this.state) {
         console.error('GlobalFoxTalk: Failed to get initial state');
         return;
-      }\n      
+      }
+      
       console.log('GlobalFoxTalk: Extension initialized, enabled:', this.state.enabled);
       
       this.setupMessageListener();
@@ -263,7 +264,7 @@ class Translator {
     return { node, words: [] }; // Return an empty array if no valid words
   }
 
-  // --- REWRITTEN updateBlockContent METHOD ---
+  // --- REWRITTEN updateBlockContent METHOD (Corrected Placeholder Logic) ---
   updateBlockContent(block) {
     const { node, words } = block;
 
@@ -295,20 +296,15 @@ class Translator {
       words.forEach(word => {
         const translation = this.translationCache.get(word.toLowerCase());
         if (translation && translation !== word) {
-          // Only match the word within the text content
+          // Regex to match the word within the text content
           // Using a non-capturing group for the word itself if needed for back-reference
-          const regex = new RegExp(`\\b(${this.escapeRegExp(word)})\\b`, 'gi');
+          const regex = new RegExp(`\\b(${this.escapeRegExp(word)})\\b`, 'gi'); 
           
           if (newTextValueWithPlaceholders.match(regex)) {
-            // Replace the word in the *text content* with unique placeholders.
-            // These placeholders will then be used to reconstruct the DOM with spans.
-            // This prevents the regex from accidentally matching within HTML attributes
-            // or causing recursive issues within its own output.
+            // Corrected placeholder: Encapsulate both original word and its translation
+            // separated by a unique delimiter within the placeholder.
             newTextValueWithPlaceholders = newTextValueWithPlaceholders.replace(regex, (match) => {
-              // Store the matched original word and its translation within the placeholder.
-              // We use escapeHtml here to ensure any special characters in the word or translation
-              // don't break the placeholder splitting.
-              return `@@@GT_WORD_START@@@${this.escapeHtml(match)}@@@GT_WORD_END@@@${this.escapeHtml(translation)}`;
+              return `@@@GT_WORD_START@@@${this.escapeHtml(match)}###GT_TRANSLATION_SEP###${this.escapeHtml(translation)}@@@GT_WORD_END@@@`;
             });
             changed = true;
           }
@@ -316,29 +312,29 @@ class Translator {
       });
 
       if (changed) {
-        // Now, convert the newTextValueWithPlaceholders into actual DOM nodes.
         const fragment = document.createDocumentFragment();
-        // Split by the placeholder pattern. (.*?) captures the original word, and the next part is the translation.
-        const parts = newTextValueWithPlaceholders.split(/@@@GT_WORD_START@@@(.*?)@@@GT_WORD_END@@@/g); 
+        // Corrected splitting regex: Captures original word and translation separately.
+        const parts = newTextValueWithPlaceholders.split(/@@@GT_WORD_START@@@(.*?)###GT_TRANSLATION_SEP###(.*?)@@@GT_WORD_END@@@/g); 
 
         for (let i = 0; i < parts.length; i++) {
-          if (i % 2 === 0) { // Even parts are regular text (before/between/after placeholders)
+          if (i % 3 === 0) { // These are the raw text parts (before, between, after placeholders)
             if (parts[i]) {
               fragment.appendChild(document.createTextNode(parts[i]));
             }
-          } else { // Odd parts are the original word captured by the regex (part of the placeholder)
+          } else if (i % 3 === 1) { // This part is the captured original word (first capture group)
             const originalWordFromPlaceholder = parts[i];
-            const translatedWordFromPlaceholder = parts[i + 1]; // The actual translation is the next part in the split array
+            const translatedWordFromPlaceholder = parts[i + 1]; // The next part is the captured translation (second capture group)
 
             const span = document.createElement('span');
             span.className = 'gt-word';
             span.setAttribute('data-original', originalWordFromPlaceholder); // Set original word
-            // IMPORTANT: Omit the 'title' attribute here to prevent recursion and "spamming" issues
+            // IMPORTANT: The 'title' attribute is deliberately omitted here to prevent recursion and "spamming" issues.
             span.textContent = translatedWordFromPlaceholder; // Set translated word as text content
 
             fragment.appendChild(span);
-            i++; // Increment i again to skip the translation part, which we just consumed
+            i++; // Increment i again to skip the translation part, as it's already consumed
           }
+          // The i % 3 === 2 case (the translation part itself) is handled by the i++ in the previous block.
         }
         
         // Replace the original text node with the new fragment containing text nodes and spans
@@ -401,10 +397,7 @@ class Translator {
     translatedElements.forEach(element => {
       const original = element.getAttribute('data-original');
       if (original) {
-        // Use textContent directly for simple text restoration, or if the original
-        // might contain complex HTML, you might need a more sophisticated approach.
-        // For words, textContent should be fine.
-        element.outerHTML = original; // This assumes original does not contain HTML tags that need to be parsed
+        element.outerHTML = original;
       }
     });
     
@@ -418,4 +411,14 @@ class Translator {
       setTimeout(() => {
         console.log(`GlobalFoxTalk: Retry attempt ${this.retryCount}`);
         this.initialize();
-      }, 2000 * this.retryCount);\n    }\n  }\n}\n\n// Initialize translator when DOM is ready\nif (document.readyState === 'loading') {\n  document.addEventListener('DOMContentLoaded', () => new Translator());\n} else {\n  new Translator();\n}
+      }, 2000 * this.retryCount);
+    }
+  }
+}
+
+// Initialize translator when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => new Translator());
+} else {
+  new Translator();
+}
