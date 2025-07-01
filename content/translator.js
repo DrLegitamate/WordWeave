@@ -292,16 +292,22 @@ class Translator {
   }
 
   shouldSkipElement(element) {
-    if (!element) return true;
-    
-    const skipTags = ['SCRIPT', 'STYLE', 'CODE', 'PRE', 'TEXTAREA', 'INPUT', 'SELECT', 'BUTTON', 'NOSCRIPT'];
-    const skipClasses = ['no-translate', 'notranslate', 'gt-popup', 'gt-notification'];
-    
-    return skipTags.includes(element.tagName) ||
-           skipClasses.some(cls => element.classList?.contains(cls)) ||
-           element.isContentEditable ||
-           element.getAttribute('translate') === 'no' ||
-           element.closest('[translate="no"]') !== null;
+  if (!element) return true;
+  
+  const skipTags = ['SCRIPT', 'STYLE', 'CODE', 'PRE', 'TEXTAREA', 'INPUT', 'SELECT', 'BUTTON', 'NOSCRIPT'];
+  const skipClasses = ['no-translate', 'notranslate', 'gt-popup', 'gt-notification'];
+  
+  // Add a crucial check: If an element is a descendant of a <button> or an element with role="button", skip it.
+  // This prevents translation of text within interactive elements whose content might be copied to attributes.
+  if (element.closest('button, [role="button"]') !== null) {
+      return true;
+  }
+
+  return skipTags.includes(element.tagName) ||
+         skipClasses.some(cls => element.classList?.contains(cls)) ||
+         element.isContentEditable ||
+         element.getAttribute('translate') === 'no' ||
+         element.closest('[translate="no"]') !== null;
   }
 
   extractTextContent(node) {
