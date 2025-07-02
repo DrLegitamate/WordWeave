@@ -309,7 +309,7 @@ function calculateStreak() {
 // Add context menu for quick actions
 browser.contextMenus.create({
   id: 'translate-selection',
-  title: 'Translate with GlobalFoxTalk',
+  title: 'Translate with WordWeave',
   contexts: ['selection']
 });
 

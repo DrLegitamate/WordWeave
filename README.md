@@ -1,6 +1,6 @@
-# GlobalFoxTalk
+# WordWeave
 
-GlobalFoxTalk is a powerful Firefox extension designed to help language learners expand their vocabulary naturally while browsing the web. The extension intelligently replaces words with their translations in your target language, creating an immersive learning environment that fits seamlessly into your daily browsing routine.
+WordWeave is a powerful Firefox extension designed to help language learners expand their vocabulary naturally while browsing the web. The extension intelligently replaces words with their translations in your target language, creating an immersive learning environment that fits seamlessly into your daily browsing routine.
 
 ## 🌟 Features
 
@@ -44,7 +44,7 @@ GlobalFoxTalk is a powerful Firefox extension designed to help language learners
 ## 📖 How to Use
 
 ### Getting Started
-1. **Enable the Extension**: Click the GlobalFoxTalk icon in your toolbar and toggle it on
+1. **Enable the Extension**: Click the WordWeave icon in your toolbar and toggle it on
 2. **Choose Your Language**: Select your target language from the dropdown menu
 3. **Set Intensity**: Choose how many words you want translated (Light: 10%, Medium: 25%, Intensive: 40%)
 4. **Start Browsing**: Visit any website and watch as words get translated automatically
@@ -84,7 +84,7 @@ Access advanced settings by clicking "Advanced Settings" in the popup:
 
 ## 🎯 Learning Methodology
 
-GlobalFoxTalk uses proven language learning principles:
+WordWeave uses proven language learning principles:
 
 ### Contextual Learning
 Words are learned in their natural context, making them more memorable and easier to understand.
@@ -107,8 +107,8 @@ Learning happens naturally during your regular browsing, without dedicated study
 
 ### Setup
 ```bash
-git clone https://github.com/yourusername/globalfoxtalk
-cd globalfoxtalk
+git clone https://github.com/yourusername/wordweave
+cd wordweave
 npm install
 ```
 
@@ -175,7 +175,7 @@ We welcome contributions! Here's how you can help:
 
 ## 🔒 Privacy Policy
 
-GlobalFoxTalk is committed to protecting your privacy:
+WordWeave is committed to protecting your privacy:
 
 - **No Personal Data Collection**: We don't collect, store, or transmit personal information
 - **Local Storage Only**: All your learning data stays on your device
@@ -202,6 +202,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Start your language learning journey today with GlobalFoxTalk!** 🌍📚
+**Start your language learning journey today with WordWeave!** 🌍📚
 
 *Learn naturally, browse freely, grow continuously.*

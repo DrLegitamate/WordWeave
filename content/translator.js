@@ -20,18 +20,18 @@ class Translator {
       });
       
       if (excludeResponse.excluded) {
-        console.log('GlobalFoxTalk: Site excluded from translation');
+        console.log('WordWeave: Site excluded from translation');
         return;
       }
       
       this.state = await browser.runtime.sendMessage({ type: 'GET_STATE' });
       
       if (!this.state) {
-        console.error('GlobalFoxTalk: Failed to get initial state');
+        console.error('WordWeave: Failed to get initial state');
         return;
       }
       
-      console.log('GlobalFoxTalk: Extension initialized, enabled:', this.state.enabled);
+      console.log('WordWeave: Extension initialized, enabled:', this.state.enabled);
       
       this.setupMessageListener();
       this.setupMutationObserver();
@@ -43,7 +43,7 @@ class Translator {
       }
       
     } catch (error) {
-      console.error('GlobalFoxTalk: Initialization failed:', error);
+      console.error('WordWeave: Initialization failed:', error);
       this.scheduleRetry();
     }
   }
@@ -115,7 +115,7 @@ class Translator {
         this.showNotification('Could not translate selected text.', 'error');
       }
     } catch (error) {
-      console.error('GlobalFoxTalk: Error translating selection:', error);
+      console.error('WordWeave: Error translating selection:', error);
       this.showNotification('Error translating text. Please try again.', 'error');
     }
   }
@@ -347,16 +347,16 @@ class Translator {
     if (!this.state?.enabled || this.isProcessing) return;
     
     this.isProcessing = true;
-    console.log('GlobalFoxTalk: Processing page for translation...');
+    console.log('WordWeave: Processing page for translation...');
 
     try {
       // Find all text containers using improved strategy
       const containers = this.findTextContainers();
       
-      console.log(`GlobalFoxTalk: Found ${containers.length} text containers to process`);
+      console.log(`WordWeave: Found ${containers.length} text containers to process`);
 
       if (containers.length === 0) {
-        console.log('GlobalFoxTalk: No suitable text containers found');
+        console.log('WordWeave: No suitable text containers found');
         this.isProcessing = false;
         return;
       }
@@ -375,7 +375,7 @@ class Translator {
       }
 
     } catch (error) {
-      console.error('GlobalFoxTalk: Error processing page:', error);
+      console.error('WordWeave: Error processing page:', error);
     } finally {
       this.isProcessing = false;
     }
@@ -408,7 +408,7 @@ class Translator {
         }
 
       } catch (error) {
-        console.error('GlobalFoxTalk: Error processing element:', error);
+        console.error('WordWeave: Error processing element:', error);
       }
     }
   }
@@ -437,7 +437,7 @@ class Translator {
         }
 
       } catch (error) {
-        console.error(`GlobalFoxTalk: Error translating word "${word}":`, error);
+        console.error(`WordWeave: Error translating word "${word}":`, error);
       }
     }
 
@@ -603,7 +603,7 @@ class Translator {
   }
 
   restoreOriginalContent() {
-    console.log('GlobalFoxTalk: Restoring original content');
+    console.log('WordWeave: Restoring original content');
     
     const translatedElements = document.querySelectorAll('.gt-word');
     translatedElements.forEach(element => {
@@ -621,7 +621,7 @@ class Translator {
     if (this.retryCount < this.maxRetries) {
       this.retryCount++;
       setTimeout(() => {
-        console.log(`GlobalFoxTalk: Retry attempt ${this.retryCount}`);
+        console.log(`WordWeave: Retry attempt ${this.retryCount}`);
         this.initialize();
       }, 2000 * this.retryCount);
     }
