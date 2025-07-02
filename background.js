@@ -2,7 +2,7 @@ let state = {
   enabled: false,
   translationRate: 'medium',
   targetLanguage: 'es',
-  sourceLanguage: 'en', // Add explicit source language
+  sourceLanguage: 'en',
   translateHeaders: true,
   translateNav: true,
   showTooltips: true,
@@ -20,7 +20,6 @@ let state = {
 
 // Language detection utility
 const LANGUAGE_DETECTOR = {
-  // Common words in different languages for basic detection
   patterns: {
     'en': ['the', 'and', 'is', 'in', 'to', 'of', 'a', 'that', 'it', 'with', 'for', 'as', 'was', 'on', 'are'],
     'es': ['el', 'la', 'de', 'que', 'y', 'a', 'en', 'un', 'es', 'se', 'no', 'te', 'lo', 'le', 'da'],
@@ -43,15 +42,13 @@ const LANGUAGE_DETECTOR = {
   },
 
   detectLanguage(text) {
-    const words = text.toLowerCase().split(/\s+/).slice(0, 50); // Check first 50 words
+    const words = text.toLowerCase().split(/\s+/).slice(0, 50);
     const scores = {};
     
-    // Initialize scores
     Object.keys(this.patterns).forEach(lang => {
       scores[lang] = 0;
     });
     
-    // Score each language based on common word matches
     words.forEach(word => {
       Object.keys(this.patterns).forEach(lang => {
         if (this.patterns[lang].includes(word)) {
@@ -60,9 +57,8 @@ const LANGUAGE_DETECTOR = {
       });
     });
     
-    // Find language with highest score
     let maxScore = 0;
-    let detectedLang = 'en'; // Default to English
+    let detectedLang = 'en';
     
     Object.keys(scores).forEach(lang => {
       if (scores[lang] > maxScore) {
@@ -71,7 +67,6 @@ const LANGUAGE_DETECTOR = {
       }
     });
     
-    // Return detected language only if confidence is reasonable
     return maxScore >= 2 ? detectedLang : 'en';
   }
 };
@@ -104,7 +99,6 @@ const TRANSLATION_SERVICES = {
 browser.storage.local.get().then(result => {
   state = { ...state, ...result };
   
-  // Reset daily counter if it's a new day
   const today = new Date().toDateString();
   if (state.lastResetDate !== today) {
     state.wordsLearnedToday = 0;
@@ -152,7 +146,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
           console.error('Translation error:', error);
           sendResponse({ error: error.message });
         });
-      return true; // Required for async response
+      return true;
       
     case 'MARK_WORD_LEARNED':
       markWordAsLearned(message.payload.word, message.payload.translation);
@@ -187,21 +181,18 @@ async function translateText(text, targetLang, sourceLang = null) {
   const service = TRANSLATION_SERVICES[state.translationService] || TRANSLATION_SERVICES.libretranslate;
   
   try {
-    // Determine source language
     let sourceLanguage = sourceLang;
     
     if (!sourceLanguage) {
       if (state.autoDetectLanguage && service.supportsAutoDetect) {
         sourceLanguage = 'auto';
       } else if (state.autoDetectLanguage && !service.supportsAutoDetect) {
-        // Use our language detector for services that don't support auto-detect
         sourceLanguage = LANGUAGE_DETECTOR.detectLanguage(text);
       } else {
         sourceLanguage = state.sourceLanguage || 'en';
       }
     }
     
-    // Don't translate if source and target are the same
     if (sourceLanguage === targetLang && sourceLanguage !== 'auto') {
       return text;
     }
@@ -226,14 +217,12 @@ async function translateText(text, targetLang, sourceLang = null) {
     
     const data = await response.json();
     
-    // Check for API-specific errors
     if (service === TRANSLATION_SERVICES.mymemory && data.responseStatus !== 200) {
       throw new Error(`MyMemory API error: ${data.responseDetails || 'Unknown error'}`);
     }
     
     const translation = service.parseResponse(data);
     
-    // Validate translation
     if (!translation || translation.trim() === '') {
       throw new Error('Empty translation received');
     }
@@ -243,7 +232,6 @@ async function translateText(text, targetLang, sourceLang = null) {
   } catch (error) {
     console.error('Translation failed:', error);
     
-    // Fallback to alternative service
     if (state.translationService !== 'mymemory') {
       try {
         const fallbackService = TRANSLATION_SERVICES.mymemory;
@@ -285,7 +273,6 @@ function markWordAsLearned(word, translation) {
     wordsLearnedToday: state.wordsLearnedToday
   });
   
-  // Show achievement notification
   if (state.wordsLearnedToday === state.dailyGoal) {
     browser.notifications.create({
       type: 'basic',
@@ -297,7 +284,6 @@ function markWordAsLearned(word, translation) {
 }
 
 function calculateStreak() {
-  // Simple streak calculation - could be enhanced
   const today = new Date();
   let streak = 0;
   
@@ -306,7 +292,6 @@ function calculateStreak() {
     date.setDate(date.getDate() - i);
     const dateString = date.toDateString();
     
-    // Check if any words were learned on this date
     const wordsOnDate = Object.values(state.learnedWords).filter(word => 
       new Date(word.learnedDate).toDateString() === dateString
     );
