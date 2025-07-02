@@ -219,6 +219,7 @@ class Translator {
     const skipTags = ['SCRIPT', 'STYLE', 'CODE', 'PRE', 'TEXTAREA', 'INPUT', 'SELECT', 'NOSCRIPT', 'SVG'];
     const skipClasses = ['no-translate', 'notranslate', 'gt-popup', 'gt-notification', 'gt-word'];
 
+    // Skip interactive elements
     if (element.closest('button, [role="button"]') !== null) {
       return true;
     }
@@ -242,20 +243,88 @@ class Translator {
     return false;
   }
 
-  isSignificantTextBlock(element) {
-    if (element.nodeType !== Node.ELEMENT_NODE) return false;
-    if (this.shouldSkipElement(element)) return false;
+  isTextContainer(element) {
+    // Check if element contains meaningful text content
     if (!element.textContent?.trim()) return false;
+    
+    // Skip if already processed
     if (this.processedElements.has(element)) return false;
+    
+    // Skip if should be skipped
+    if (this.shouldSkipElement(element)) return false;
+    
+    const text = element.textContent.trim();
+    
+    // Must have reasonable text length
+    if (text.length < 5) return false;
+    
+    // Must contain actual words (not just numbers/symbols)
+    const wordCount = (text.match(/\b[a-zA-ZÀ-ÿĀ-žА-я]{2,}\b/g) || []).length;
+    if (wordCount < 2) return false;
+    
+    // Check if this element has direct text content (not just from children)
+    const directText = Array.from(element.childNodes)
+      .filter(node => node.nodeType === Node.TEXT_NODE)
+      .map(node => node.textContent.trim())
+      .join(' ')
+      .trim();
+    
+    // If element has direct text content OR is a leaf element with text, it's processable
+    return directText.length > 0 || (element.children.length === 0 && text.length > 0);
+  }
 
-    const textLength = element.textContent.trim().length;
-    if (textLength < 10 || textLength > 2000) return false;
+  findTextContainers() {
+    const containers = [];
+    
+    // Strategy 1: Find elements with direct text content
+    const walker = document.createTreeWalker(
+      document.body,
+      NodeFilter.SHOW_ELEMENT,
+      {
+        acceptNode: (node) => {
+          if (this.shouldSkipElement(node)) {
+            return NodeFilter.FILTER_REJECT;
+          }
+          
+          // Accept elements that contain text
+          if (this.isTextContainer(node)) {
+            return NodeFilter.FILTER_ACCEPT;
+          }
+          
+          return NodeFilter.FILTER_SKIP;
+        }
+      }
+    );
 
-    // Check if element has meaningful text content (not just whitespace/symbols)
-    const meaningfulText = element.textContent.match(/[a-zA-ZÀ-ÿĀ-žА-я]/g);
-    if (!meaningfulText || meaningfulText.length < 5) return false;
+    let node;
+    while (node = walker.nextNode()) {
+      containers.push(node);
+    }
 
-    return true;
+    // Strategy 2: Also check common content containers
+    const commonSelectors = [
+      'p', 'div', 'span', 'article', 'section', 'main', 'aside',
+      'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+      'li', 'td', 'th', 'blockquote', 'figcaption',
+      'a', 'strong', 'em', 'b', 'i', 'mark', 'small'
+    ];
+
+    commonSelectors.forEach(selector => {
+      const elements = document.querySelectorAll(selector);
+      elements.forEach(element => {
+        if (this.isTextContainer(element) && !containers.includes(element)) {
+          containers.push(element);
+        }
+      });
+    });
+
+    // Remove nested elements (keep only the most specific containers)
+    return containers.filter(container => {
+      return !containers.some(other => 
+        other !== container && other.contains(container) && 
+        other.textContent.trim() === container.textContent.trim()
+      );
+    });
   }
 
   extractWordsFromElement(element) {
@@ -281,28 +350,28 @@ class Translator {
     console.log('GlobalFoxTalk: Processing page for translation...');
 
     try {
-      // Find all text-containing elements
-      const elements = document.querySelectorAll('p, div, span, h1, h2, h3, h4, h5, h6, li, td, th, a, strong, em, b, i, article, section, main');
+      // Find all text containers using improved strategy
+      const containers = this.findTextContainers();
       
-      const significantElements = Array.from(elements)
-        .filter(el => this.isSignificantTextBlock(el))
-        .slice(0, 50); // Limit to first 50 elements
+      console.log(`GlobalFoxTalk: Found ${containers.length} text containers to process`);
 
-      console.log(`GlobalFoxTalk: Found ${significantElements.length} elements to process`);
-
-      if (significantElements.length === 0) {
-        console.log('GlobalFoxTalk: No suitable elements found');
+      if (containers.length === 0) {
+        console.log('GlobalFoxTalk: No suitable text containers found');
         this.isProcessing = false;
         return;
       }
 
-      // Process elements in batches
-      for (let i = 0; i < significantElements.length; i += 5) {
-        const batch = significantElements.slice(i, i + 5);
+      // Sort containers by text length (process longer content first)
+      containers.sort((a, b) => b.textContent.length - a.textContent.length);
+
+      // Process containers in batches
+      const batchSize = 8;
+      for (let i = 0; i < Math.min(containers.length, 100); i += batchSize) {
+        const batch = containers.slice(i, i + batchSize);
         await this.processBatch(batch);
         
-        // Small delay between batches
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Small delay between batches to avoid overwhelming the page
+        await new Promise(resolve => setTimeout(resolve, 200));
       }
 
     } catch (error) {
@@ -321,7 +390,11 @@ class Translator {
         // Apply translation rate filter
         const rateMultipliers = { low: 0.1, medium: 0.25, high: 0.4 };
         const rate = rateMultipliers[this.state.translationRate] || 0.25;
-        const wordsToTranslate = words.filter(() => Math.random() < rate).slice(0, 3);
+        
+        // Select words to translate based on rate
+        const shuffledWords = words.sort(() => Math.random() - 0.5);
+        const maxWords = Math.max(1, Math.floor(words.length * rate));
+        const wordsToTranslate = shuffledWords.slice(0, Math.min(maxWords, 5));
 
         if (wordsToTranslate.length === 0) continue;
 
@@ -404,12 +477,71 @@ class Translator {
       const fragments = [];
       let lastIndex = 0;
 
+      // Sort translations by length (longest first) to avoid partial matches
+      const sortedTranslations = Object.entries(translations)
+        .sort(([a], [b]) => b.length - a.length);
+
       // Find all word matches in this text node
-      Object.entries(translations).forEach(([original, translation]) => {
+      sortedTranslations.forEach(([original, translation]) => {
         const regex = new RegExp(`\\b(${this.escapeRegExp(original)})\\b`, 'gi');
         let match;
+        const matches = [];
         
+        // Collect all matches first
         while ((match = regex.exec(textContent)) !== null) {
+          matches.push({
+            index: match.index,
+            length: match[1].length,
+            original: match[1],
+            translation: translation
+          });
+        }
+        
+        // Apply matches in reverse order to maintain indices
+        matches.reverse().forEach(matchInfo => {
+          if (matchInfo.index >= lastIndex) {
+            // Mark that we have changes
+            hasChanges = true;
+          }
+        });
+      });
+
+      // If we have changes, rebuild the content
+      if (hasChanges) {
+        const allMatches = [];
+        
+        // Collect all matches with their positions
+        sortedTranslations.forEach(([original, translation]) => {
+          const regex = new RegExp(`\\b(${this.escapeRegExp(original)})\\b`, 'gi');
+          let match;
+          
+          while ((match = regex.exec(textContent)) !== null) {
+            allMatches.push({
+              index: match.index,
+              length: match[1].length,
+              original: match[1],
+              translation: translation
+            });
+          }
+        });
+
+        // Sort matches by position
+        allMatches.sort((a, b) => a.index - b.index);
+
+        // Remove overlapping matches (keep first occurrence)
+        const nonOverlapping = [];
+        let lastEnd = 0;
+        
+        allMatches.forEach(match => {
+          if (match.index >= lastEnd) {
+            nonOverlapping.push(match);
+            lastEnd = match.index + match.length;
+          }
+        });
+
+        // Build fragments
+        lastIndex = 0;
+        nonOverlapping.forEach(match => {
           // Add text before the match
           if (match.index > lastIndex) {
             fragments.push({
@@ -421,43 +553,42 @@ class Translator {
           // Add the translated word
           fragments.push({
             type: 'translation',
-            original: match[1],
-            translation: translation
+            original: match.original,
+            translation: match.translation
           });
           
-          lastIndex = match.index + match[1].length;
-          hasChanges = true;
+          lastIndex = match.index + match.length;
+        });
+
+        // Add remaining text
+        if (lastIndex < textContent.length) {
+          fragments.push({
+            type: 'text',
+            content: textContent.substring(lastIndex)
+          });
         }
-      });
 
-      // Add remaining text
-      if (lastIndex < textContent.length) {
-        fragments.push({
-          type: 'text',
-          content: textContent.substring(lastIndex)
-        });
-      }
-
-      // Replace the text node with fragments if there were changes
-      if (hasChanges && fragments.length > 0) {
-        const documentFragment = document.createDocumentFragment();
-        
-        fragments.forEach(fragment => {
-          if (fragment.type === 'text') {
-            if (fragment.content) {
-              documentFragment.appendChild(document.createTextNode(fragment.content));
+        // Replace the text node with fragments
+        if (fragments.length > 0) {
+          const documentFragment = document.createDocumentFragment();
+          
+          fragments.forEach(fragment => {
+            if (fragment.type === 'text') {
+              if (fragment.content) {
+                documentFragment.appendChild(document.createTextNode(fragment.content));
+              }
+            } else if (fragment.type === 'translation') {
+              const span = document.createElement('span');
+              span.className = 'gt-word';
+              span.setAttribute('data-original', fragment.original);
+              span.textContent = fragment.translation;
+              documentFragment.appendChild(span);
             }
-          } else if (fragment.type === 'translation') {
-            const span = document.createElement('span');
-            span.className = 'gt-word';
-            span.setAttribute('data-original', fragment.original);
-            span.textContent = fragment.translation;
-            documentFragment.appendChild(span);
-          }
-        });
-        
-        // Replace the original text node
-        textNode.parentNode.replaceChild(documentFragment, textNode);
+          });
+          
+          // Replace the original text node
+          textNode.parentNode.replaceChild(documentFragment, textNode);
+        }
       }
     });
   }
@@ -465,9 +596,9 @@ class Translator {
   processNewNodes(nodes) {
     if (!this.state?.enabled || this.isProcessing) return;
     
-    const significantNodes = nodes.filter(node => this.isSignificantTextBlock(node));
-    if (significantNodes.length > 0) {
-      setTimeout(() => this.processBatch(significantNodes), 500);
+    const textContainers = nodes.filter(node => this.isTextContainer(node));
+    if (textContainers.length > 0) {
+      setTimeout(() => this.processBatch(textContainers), 500);
     }
   }
 
