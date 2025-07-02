@@ -372,18 +372,94 @@ class Translator {
   }
 
   applyTranslationsToElement(element, translations) {
-    let html = element.innerHTML;
-    
-    Object.entries(translations).forEach(([original, translation]) => {
-      const regex = new RegExp(`\\b(${this.escapeRegExp(original)})\\b`, 'gi');
-      html = html.replace(regex, (match) => {
-        return `<span class="gt-word" data-original="${this.escapeHtml(match)}" title="${this.escapeHtml(match)}">${this.escapeHtml(translation)}</span>`;
-      });
-    });
-    
-    if (html !== element.innerHTML) {
-      element.innerHTML = html;
+    // Use TreeWalker to process only text nodes, avoiding HTML contamination
+    const walker = document.createTreeWalker(
+      element,
+      NodeFilter.SHOW_TEXT,
+      {
+        acceptNode: (node) => {
+          // Skip text nodes inside elements we want to avoid
+          if (node.parentElement && this.shouldSkipElement(node.parentElement)) {
+            return NodeFilter.FILTER_REJECT;
+          }
+          // Only process text nodes with actual content
+          if (node.textContent.trim().length === 0) {
+            return NodeFilter.FILTER_REJECT;
+          }
+          return NodeFilter.FILTER_ACCEPT;
+        }
+      }
+    );
+
+    const textNodes = [];
+    let node;
+    while (node = walker.nextNode()) {
+      textNodes.push(node);
     }
+
+    // Process each text node
+    textNodes.forEach(textNode => {
+      let textContent = textNode.textContent;
+      let hasChanges = false;
+      const fragments = [];
+      let lastIndex = 0;
+
+      // Find all word matches in this text node
+      Object.entries(translations).forEach(([original, translation]) => {
+        const regex = new RegExp(`\\b(${this.escapeRegExp(original)})\\b`, 'gi');
+        let match;
+        
+        while ((match = regex.exec(textContent)) !== null) {
+          // Add text before the match
+          if (match.index > lastIndex) {
+            fragments.push({
+              type: 'text',
+              content: textContent.substring(lastIndex, match.index)
+            });
+          }
+          
+          // Add the translated word
+          fragments.push({
+            type: 'translation',
+            original: match[1],
+            translation: translation
+          });
+          
+          lastIndex = match.index + match[1].length;
+          hasChanges = true;
+        }
+      });
+
+      // Add remaining text
+      if (lastIndex < textContent.length) {
+        fragments.push({
+          type: 'text',
+          content: textContent.substring(lastIndex)
+        });
+      }
+
+      // Replace the text node with fragments if there were changes
+      if (hasChanges && fragments.length > 0) {
+        const documentFragment = document.createDocumentFragment();
+        
+        fragments.forEach(fragment => {
+          if (fragment.type === 'text') {
+            if (fragment.content) {
+              documentFragment.appendChild(document.createTextNode(fragment.content));
+            }
+          } else if (fragment.type === 'translation') {
+            const span = document.createElement('span');
+            span.className = 'gt-word';
+            span.setAttribute('data-original', fragment.original);
+            span.textContent = fragment.translation;
+            documentFragment.appendChild(span);
+          }
+        });
+        
+        // Replace the original text node
+        textNode.parentNode.replaceChild(documentFragment, textNode);
+      }
+    });
   }
 
   processNewNodes(nodes) {
