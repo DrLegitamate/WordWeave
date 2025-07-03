@@ -8,6 +8,7 @@ class Translator {
     this.processedElements = new WeakSet();
     this.retryCount = 0;
     this.maxRetries = 3;
+    this.progressBar = null;
     
     this.initialize();
   }
@@ -36,6 +37,7 @@ class Translator {
       this.setupMessageListener();
       this.setupMutationObserver();
       this.setupContextMenuHandler();
+      this.createProgressBar();
       
       // Process page if extension is enabled
       if (this.state.enabled) {
@@ -48,6 +50,57 @@ class Translator {
     }
   }
 
+  createProgressBar() {
+    // Remove existing progress bar if any
+    const existingBar = document.querySelector('.gt-progress-container');
+    if (existingBar) {
+      existingBar.remove();
+    }
+
+    // Create progress bar container
+    const progressContainer = document.createElement('div');
+    progressContainer.className = 'gt-progress-container';
+    progressContainer.innerHTML = `
+      <div class="gt-progress-bar">
+        <div class="gt-progress-fill"></div>
+      </div>
+      <div class="gt-progress-text">WordWeave: Preparing...</div>
+    `;
+
+    document.body.appendChild(progressContainer);
+    this.progressBar = progressContainer;
+  }
+
+  updateProgress(current, total, status = 'Translating...') {
+    if (!this.progressBar) return;
+
+    const progressFill = this.progressBar.querySelector('.gt-progress-fill');
+    const progressText = this.progressBar.querySelector('.gt-progress-text');
+    
+    if (progressFill && progressText) {
+      const percentage = total > 0 ? Math.round((current / total) * 100) : 0;
+      progressFill.style.width = `${percentage}%`;
+      progressText.textContent = `WordWeave: ${status} (${current}/${total})`;
+    }
+  }
+
+  showProgress() {
+    if (this.progressBar) {
+      this.progressBar.classList.add('gt-progress-show');
+    }
+  }
+
+  hideProgress() {
+    if (this.progressBar) {
+      this.progressBar.classList.remove('gt-progress-show');
+      setTimeout(() => {
+        if (this.progressBar && !this.progressBar.classList.contains('gt-progress-show')) {
+          this.progressBar.style.display = 'none';
+        }
+      }, 500);
+    }
+  }
+
   setupMessageListener() {
     browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
       if (message.type === 'STATE_UPDATED') {
@@ -56,6 +109,7 @@ class Translator {
           this.processPage();
         } else {
           this.restoreOriginalContent();
+          this.hideProgress();
         }
       } else if (message.type === 'TRANSLATE_SELECTION') {
         this.translateSelection(message.payload.text);
@@ -196,7 +250,7 @@ class Translator {
     if (!element || element.nodeType !== Node.ELEMENT_NODE) return true;
     
     const skipTags = ['SCRIPT', 'STYLE', 'CODE', 'PRE', 'TEXTAREA', 'INPUT', 'SELECT', 'NOSCRIPT', 'SVG'];
-    const skipClasses = ['no-translate', 'notranslate', 'gt-popup', 'gt-notification', 'gt-word'];
+    const skipClasses = ['no-translate', 'notranslate', 'gt-popup', 'gt-notification', 'gt-word', 'gt-progress-container'];
 
     // Skip interactive elements
     if (element.closest('button, [role="button"]') !== null) {
@@ -328,6 +382,10 @@ class Translator {
     console.log('WordWeave: Processing page for translation...');
 
     try {
+      // Show progress bar
+      this.showProgress();
+      this.updateProgress(0, 100, 'Finding text containers...');
+
       // Find all text containers using improved strategy
       const containers = this.findTextContainers();
       
@@ -335,6 +393,7 @@ class Translator {
 
       if (containers.length === 0) {
         console.log('WordWeave: No suitable text containers found');
+        this.hideProgress();
         this.isProcessing = false;
         return;
       }
@@ -344,16 +403,39 @@ class Translator {
 
       // Process containers in batches
       const batchSize = 8;
+      const totalBatches = Math.ceil(Math.min(containers.length, 100) / batchSize);
+      let processedBatches = 0;
+
       for (let i = 0; i < Math.min(containers.length, 100); i += batchSize) {
         const batch = containers.slice(i, i + batchSize);
+        
+        this.updateProgress(
+          processedBatches, 
+          totalBatches, 
+          `Processing batch ${processedBatches + 1}/${totalBatches}...`
+        );
+        
         await this.processBatch(batch);
+        processedBatches++;
+        
+        // Update progress
+        this.updateProgress(processedBatches, totalBatches, 'Processing...');
         
         // Small delay between batches to avoid overwhelming the page
         await new Promise(resolve => setTimeout(resolve, 200));
       }
 
+      // Complete
+      this.updateProgress(totalBatches, totalBatches, 'Translation complete!');
+      
+      // Hide progress bar after a short delay
+      setTimeout(() => {
+        this.hideProgress();
+      }, 2000);
+
     } catch (error) {
       console.error('WordWeave: Error processing page:', error);
+      this.hideProgress();
     } finally {
       this.isProcessing = false;
     }
