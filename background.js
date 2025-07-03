@@ -8,14 +8,9 @@ let state = {
   showTooltips: true,
   highlightColor: '#4a90e2',
   fontSize: 'medium',
-  customVocab: {},
-  learnedWords: {},
   translationService: 'libretranslate',
   autoDetectLanguage: true,
-  excludedSites: [],
-  dailyGoal: 10,
-  wordsLearnedToday: 0,
-  lastResetDate: new Date().toDateString()
+  excludedSites: []
 };
 
 // Language detection utility
@@ -98,16 +93,6 @@ const TRANSLATION_SERVICES = {
 // Initialize state from storage
 browser.storage.local.get().then(result => {
   state = { ...state, ...result };
-  
-  const today = new Date().toDateString();
-  if (state.lastResetDate !== today) {
-    state.wordsLearnedToday = 0;
-    state.lastResetDate = today;
-    browser.storage.local.set({ 
-      wordsLearnedToday: 0, 
-      lastResetDate: today 
-    });
-  }
 });
 
 // Listen for messages from content scripts and popup
@@ -147,20 +132,6 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
           sendResponse({ error: error.message });
         });
       return true;
-      
-    case 'MARK_WORD_LEARNED':
-      markWordAsLearned(message.payload.word, message.payload.translation);
-      sendResponse({ success: true });
-      break;
-      
-    case 'GET_STATS':
-      sendResponse({
-        wordsLearnedToday: state.wordsLearnedToday,
-        totalWordsLearned: Object.keys(state.learnedWords).length,
-        dailyGoal: state.dailyGoal,
-        streak: calculateStreak()
-      });
-      break;
       
     case 'CHECK_SITE_EXCLUDED':
       const url = new URL(sender.tab.url);
@@ -257,53 +228,6 @@ async function translateText(text, targetLang, sourceLang = null) {
     
     throw error;
   }
-}
-
-function markWordAsLearned(word, translation) {
-  state.learnedWords[word] = {
-    translation,
-    learnedDate: new Date().toISOString(),
-    reviewCount: 1
-  };
-  
-  state.wordsLearnedToday++;
-  
-  browser.storage.local.set({
-    learnedWords: state.learnedWords,
-    wordsLearnedToday: state.wordsLearnedToday
-  });
-  
-  if (state.wordsLearnedToday === state.dailyGoal) {
-    browser.notifications.create({
-      type: 'basic',
-      iconUrl: 'icons/icon-48.png',
-      title: 'Daily Goal Achieved!',
-      message: `Congratulations! You've learned ${state.dailyGoal} words today.`
-    });
-  }
-}
-
-function calculateStreak() {
-  const today = new Date();
-  let streak = 0;
-  
-  for (let i = 0; i < 30; i++) {
-    const date = new Date(today);
-    date.setDate(date.getDate() - i);
-    const dateString = date.toDateString();
-    
-    const wordsOnDate = Object.values(state.learnedWords).filter(word => 
-      new Date(word.learnedDate).toDateString() === dateString
-    );
-    
-    if (wordsOnDate.length > 0) {
-      streak++;
-    } else if (i > 0) {
-      break;
-    }
-  }
-  
-  return streak;
 }
 
 // Add context menu for quick actions

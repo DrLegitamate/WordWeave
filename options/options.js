@@ -1,11 +1,9 @@
 let currentState = null;
-let currentStats = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
   try {
-    // Load current state and stats
+    // Load current state
     currentState = await browser.runtime.sendMessage({ type: 'GET_STATE' });
-    currentStats = await browser.runtime.sendMessage({ type: 'GET_STATS' });
     
     if (!currentState) {
       throw new Error('Failed to load extension state');
@@ -25,6 +23,7 @@ function initializeUI() {
   // Translation settings
   document.getElementById('sourceLanguageOptions').value = currentState.autoDetectLanguage ? 'auto' : (currentState.sourceLanguage || 'en');
   document.getElementById('targetLanguageOptions').value = currentState.targetLanguage ?? 'es';
+  document.getElementById('translationRateOptions').value = currentState.translationRate ?? 'medium';
   document.getElementById('translateHeaders').checked = currentState.translateHeaders ?? true;
   document.getElementById('translateNav').checked = currentState.translateNav ?? true;
   document.getElementById('showTooltips').checked = currentState.showTooltips ?? true;
@@ -35,19 +34,9 @@ function initializeUI() {
   document.getElementById('highlightColorText').value = currentState.highlightColor ?? '#4a90e2';
   document.getElementById('fontSize').value = currentState.fontSize ?? 'medium';
   
-  // Learning settings
-  document.getElementById('dailyGoalOptions').value = currentState.dailyGoal ?? 10;
-  
   // Sites settings
   const excludedSites = currentState.excludedSites || [];
   document.getElementById('excludedSites').value = excludedSites.join('\n');
-  
-  // Update stats
-  if (currentStats) {
-    document.getElementById('totalLearnedStat').textContent = currentStats.totalWordsLearned;
-    document.getElementById('currentStreakStat').textContent = currentStats.streak;
-    document.getElementById('todayLearnedStat').textContent = currentStats.wordsLearnedToday;
-  }
   
   // Update preview
   updatePreview();
@@ -82,6 +71,11 @@ function setupEventListeners() {
   document.getElementById('targetLanguageOptions').addEventListener('change', (e) => {
     updateState({ targetLanguage: e.target.value });
   });
+
+  // Translation rate changes
+  document.getElementById('translationRateOptions').addEventListener('change', (e) => {
+    updateState({ translationRate: e.target.value });
+  });
   
   // Color picker synchronization
   document.getElementById('highlightColor').addEventListener('input', (e) => {
@@ -100,15 +94,10 @@ function setupEventListeners() {
   // Font size preview update
   document.getElementById('fontSize').addEventListener('change', updatePreview);
   
-  // File operations
-  document.getElementById('vocabImport').addEventListener('change', handleVocabImport);
-  document.getElementById('exportVocab').addEventListener('click', exportVocab);
-  
   // Site management
   document.getElementById('addCurrentSite').addEventListener('click', addCurrentSite);
   
   // Reset operations
-  document.getElementById('resetLearningProgress').addEventListener('click', resetLearningProgress);
   document.getElementById('resetAllSettings').addEventListener('click', resetAllSettings);
   
   // Save operations
@@ -118,7 +107,7 @@ function setupEventListeners() {
   // Auto-save on change for most settings
   const autoSaveElements = [
     'translateHeaders', 'translateNav', 'showTooltips', 
-    'translationService', 'dailyGoalOptions'
+    'translationService'
   ];
   
   autoSaveElements.forEach(id => {
@@ -187,13 +176,13 @@ function gatherFormData() {
     autoDetectLanguage: sourceLanguageValue === 'auto',
     sourceLanguage: sourceLanguageValue === 'auto' ? 'en' : sourceLanguageValue,
     targetLanguage: document.getElementById('targetLanguageOptions').value,
+    translationRate: document.getElementById('translationRateOptions').value,
     translateHeaders: document.getElementById('translateHeaders').checked,
     translateNav: document.getElementById('translateNav').checked,
     showTooltips: document.getElementById('showTooltips').checked,
     translationService: document.getElementById('translationService').value,
     highlightColor: document.getElementById('highlightColor').value,
     fontSize: document.getElementById('fontSize').value,
-    dailyGoal: parseInt(document.getElementById('dailyGoalOptions').value),
     excludedSites: document.getElementById('excludedSites').value
       .split('\n')
       .map(site => site.trim())
@@ -209,77 +198,6 @@ async function updateState(changes) {
   
   // Update local state
   currentState = { ...currentState, ...changes };
-}
-
-async function handleVocabImport(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  
-  try {
-    updateSaveStatus('Importing vocabulary...', 'loading');
-    
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      try {
-        let vocab = {};
-        
-        if (file.name.endsWith('.json')) {
-          vocab = JSON.parse(e.target.result);
-        } else if (file.name.endsWith('.csv')) {
-          const lines = e.target.result.split('\n');
-          for (const line of lines) {
-            const [original, translation] = line.split(',').map(s => s.trim());
-            if (original && translation) {
-              vocab[original] = translation;
-            }
-          }
-        }
-        
-        await updateState({ customVocab: vocab });
-        updateSaveStatus(`Imported ${Object.keys(vocab).length} vocabulary entries`, 'success');
-        
-      } catch (error) {
-        updateSaveStatus('Import failed: Invalid file format', 'error');
-      }
-    };
-    
-    reader.readAsText(file);
-    
-  } catch (error) {
-    updateSaveStatus('Import failed', 'error');
-  }
-}
-
-async function exportVocab() {
-  try {
-    const learnedWords = currentState.learnedWords || {};
-    const customVocab = currentState.customVocab || {};
-    
-    const exportData = {
-      learnedWords,
-      customVocab,
-      exportDate: new Date().toISOString(),
-      totalWords: Object.keys(learnedWords).length
-    };
-    
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], {
-      type: 'application/json'
-    });
-    
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `globalfoxtalk-vocabulary-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    updateSaveStatus('Vocabulary exported successfully', 'success');
-    
-  } catch (error) {
-    updateSaveStatus('Export failed', 'error');
-  }
 }
 
 async function addCurrentSite() {
@@ -300,32 +218,8 @@ async function addCurrentSite() {
   }
 }
 
-async function resetLearningProgress() {
-  if (!confirm('Are you sure you want to reset all learning progress? This will delete all learned words and statistics. This action cannot be undone.')) {
-    return;
-  }
-  
-  try {
-    await updateState({
-      learnedWords: {},
-      wordsLearnedToday: 0,
-      lastResetDate: new Date().toDateString()
-    });
-    
-    // Update UI
-    document.getElementById('totalLearnedStat').textContent = '0';
-    document.getElementById('currentStreakStat').textContent = '0';
-    document.getElementById('todayLearnedStat').textContent = '0';
-    
-    updateSaveStatus('Learning progress reset', 'success');
-    
-  } catch (error) {
-    updateSaveStatus('Reset failed', 'error');
-  }
-}
-
 async function resetAllSettings() {
-  if (!confirm('Are you sure you want to reset ALL settings to defaults? This will also reset your learning progress. This action cannot be undone.')) {
+  if (!confirm('Are you sure you want to reset ALL settings to defaults? This action cannot be undone.')) {
     return;
   }
   
@@ -341,13 +235,8 @@ async function resetAllSettings() {
       showTooltips: true,
       highlightColor: '#4a90e2',
       fontSize: 'medium',
-      customVocab: {},
-      learnedWords: {},
       translationService: 'libretranslate',
-      excludedSites: [],
-      dailyGoal: 10,
-      wordsLearnedToday: 0,
-      lastResetDate: new Date().toDateString()
+      excludedSites: []
     };
     
     await updateState(defaults);
@@ -361,7 +250,7 @@ async function resetAllSettings() {
 }
 
 async function resetToDefaults() {
-  if (!confirm('Reset all settings to defaults? (This will not affect your learned vocabulary)')) {
+  if (!confirm('Reset all settings to defaults?')) {
     return;
   }
   
@@ -377,8 +266,7 @@ async function resetToDefaults() {
       highlightColor: '#4a90e2',
       fontSize: 'medium',
       translationService: 'libretranslate',
-      excludedSites: [],
-      dailyGoal: 10
+      excludedSites: []
     };
     
     await updateState(defaults);
@@ -417,17 +305,3 @@ function debounce(func, wait) {
     timeout = setTimeout(later, wait);
   };
 }
-
-// Auto-refresh stats every 30 seconds
-setInterval(async () => {
-  try {
-    currentStats = await browser.runtime.sendMessage({ type: 'GET_STATS' });
-    if (currentStats) {
-      document.getElementById('totalLearnedStat').textContent = currentStats.totalWordsLearned;
-      document.getElementById('currentStreakStat').textContent = currentStats.streak;
-      document.getElementById('todayLearnedStat').textContent = currentStats.wordsLearnedToday;
-    }
-  } catch (error) {
-    // Silently fail
-  }
-}, 30000);

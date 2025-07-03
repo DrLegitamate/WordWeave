@@ -1,17 +1,15 @@
 document.addEventListener('DOMContentLoaded', async () => {
   let state = null;
-  let stats = null;
   
   try {
-    // Load current state and stats
+    // Load current state
     state = await browser.runtime.sendMessage({ type: 'GET_STATE' });
-    stats = await browser.runtime.sendMessage({ type: 'GET_STATS' });
     
     if (!state) {
       throw new Error('Failed to load extension state');
     }
     
-    initializeUI(state, stats);
+    initializeUI(state);
     setupEventListeners();
     updateStatus('Ready');
     
@@ -21,7 +19,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 });
 
-function initializeUI(state, stats) {
+function initializeUI(state) {
   // Initialize toggle
   document.getElementById('enableToggle').checked = state.enabled;
   
@@ -29,19 +27,6 @@ function initializeUI(state, stats) {
   document.getElementById('sourceLanguage').value = state.autoDetectLanguage ? 'auto' : (state.sourceLanguage || 'en');
   document.getElementById('targetLanguage').value = state.targetLanguage;
   document.getElementById('translationRate').value = state.translationRate;
-  document.getElementById('dailyGoal').value = state.dailyGoal || 10;
-  
-  // Update stats
-  if (stats) {
-    document.getElementById('wordsToday').textContent = stats.wordsLearnedToday;
-    document.getElementById('totalWords').textContent = stats.totalWordsLearned;
-    document.getElementById('streak').textContent = stats.streak;
-    
-    // Update progress
-    const progress = Math.min((stats.wordsLearnedToday / stats.dailyGoal) * 100, 100);
-    document.getElementById('progressFill').style.width = `${progress}%`;
-    document.getElementById('progressText').textContent = `${stats.wordsLearnedToday}/${stats.dailyGoal}`;
-  }
   
   // Update UI state based on enabled status
   updateUIState(state.enabled);
@@ -86,43 +71,10 @@ function setupEventListeners() {
     updateStatus('Translation rate updated');
   });
   
-  // Daily goal changes
-  document.getElementById('dailyGoal').addEventListener('change', async (e) => {
-    const dailyGoal = parseInt(e.target.value);
-    await updateState({ dailyGoal });
-    
-    // Refresh stats to update progress bar
-    const stats = await browser.runtime.sendMessage({ type: 'GET_STATS' });
-    const progress = Math.min((stats.wordsLearnedToday / dailyGoal) * 100, 100);
-    document.getElementById('progressFill').style.width = `${progress}%`;
-    document.getElementById('progressText').textContent = `${stats.wordsLearnedToday}/${dailyGoal}`;
-    
-    updateStatus('Daily goal updated');
-  });
-  
   // Action buttons
   document.getElementById('openOptions').addEventListener('click', () => {
     browser.runtime.openOptionsPage();
     window.close();
-  });
-  
-  document.getElementById('resetProgress').addEventListener('click', async () => {
-    if (confirm('Are you sure you want to reset all learning progress? This cannot be undone.')) {
-      await updateState({ 
-        learnedWords: {}, 
-        wordsLearnedToday: 0,
-        lastResetDate: new Date().toDateString()
-      });
-      
-      // Refresh UI
-      document.getElementById('wordsToday').textContent = '0';
-      document.getElementById('totalWords').textContent = '0';
-      document.getElementById('streak').textContent = '0';
-      document.getElementById('progressFill').style.width = '0%';
-      document.getElementById('progressText').textContent = '0/' + document.getElementById('dailyGoal').value;
-      
-      updateStatus('Progress reset');
-    }
   });
 }
 
@@ -159,22 +111,3 @@ function updateStatus(message) {
     }
   }, 3000);
 }
-
-// Auto-refresh stats every 30 seconds when popup is open
-setInterval(async () => {
-  try {
-    const stats = await browser.runtime.sendMessage({ type: 'GET_STATS' });
-    if (stats) {
-      document.getElementById('wordsToday').textContent = stats.wordsLearnedToday;
-      document.getElementById('totalWords').textContent = stats.totalWordsLearned;
-      document.getElementById('streak').textContent = stats.streak;
-      
-      const dailyGoal = parseInt(document.getElementById('dailyGoal').value);
-      const progress = Math.min((stats.wordsLearnedToday / dailyGoal) * 100, 100);
-      document.getElementById('progressFill').style.width = `${progress}%`;
-      document.getElementById('progressText').textContent = `${stats.wordsLearnedToday}/${dailyGoal}`;
-    }
-  } catch (error) {
-    // Silently fail - popup might be closing
-  }
-}, 30000);

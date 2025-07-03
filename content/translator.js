@@ -140,9 +140,6 @@ class Translator {
           <span class="gt-arrow">→</span>
           <span class="gt-translation">${this.escapeHtml(translation)}</span>
         </div>
-        <div class="gt-popup-actions">
-          <button class="gt-learn-btn">Mark as Learned</button>
-        </div>
       </div>
     `;
 
@@ -164,30 +161,12 @@ class Translator {
       popup.remove();
     });
 
-    popup.querySelector('.gt-learn-btn').addEventListener('click', () => {
-      this.markWordAsLearned(original, translation);
-      popup.remove();
-    });
-
     // Auto-remove after 10 seconds
     setTimeout(() => {
       if (popup.parentNode) {
         popup.remove();
       }
     }, 10000);
-  }
-
-  async markWordAsLearned(word, translation) {
-    try {
-      await browser.runtime.sendMessage({
-        type: 'MARK_WORD_LEARNED',
-        payload: { word, translation }
-      });
-      this.showNotification(`"${word}" marked as learned!`, 'success');
-    } catch (error) {
-      console.error('Error marking word as learned:', error);
-      this.showNotification('Error saving word', 'error');
-    }
   }
 
   showNotification(message, type = 'info') {
@@ -336,8 +315,7 @@ class Translator {
     
     return words.filter(word => {
       const lowerWord = word.toLowerCase();
-      return !this.state.learnedWords[lowerWord] && 
-             !this.translationCache.has(lowerWord) &&
+      return !this.translationCache.has(lowerWord) &&
              word.length >= 2 && 
              word.length <= 20;
     });

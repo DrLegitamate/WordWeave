@@ -216,64 +216,6 @@ input[type="text"] {
   cursor: help;
 }
 
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 16px;
-}
-
-.stat-card {
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  text-align: center;
-  border: 1px solid #e9ecef;
-}
-
-.stat-number {
-  font-size: 32px;
-  font-weight: 700;
-  color: #4a90e2;
-  margin-bottom: 8px;
-}
-
-.stat-label {
-  font-size: 12px;
-  color: #6c757d;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.file-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.file-action {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.file-label {
-  display: inline-flex;
-  align-items: center;
-  padding: 10px 16px;
-  background: #6c757d;
-  color: white;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  transition: background-color 0.2s;
-  align-self: flex-start;
-}
-
-.file-label:hover {
-  background: #5a6268;
-}
-
 .danger-zone {
   display: flex;
   flex-direction: column;
@@ -364,10 +306,6 @@ button {
     padding: 16px 20px;
     flex-direction: column;
     gap: 16px;
-  }
-  
-  .stats-grid {
-    grid-template-columns: 1fr;
   }
   
   .color-input-group {

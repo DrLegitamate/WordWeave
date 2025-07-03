@@ -15,7 +15,6 @@
     <nav class="options-nav">
       <button class="nav-btn active" data-section="translation">Translation</button>
       <button class="nav-btn" data-section="appearance">Appearance</button>
-      <button class="nav-btn" data-section="learning">Learning</button>
       <button class="nav-btn" data-section="sites">Sites</button>
       <button class="nav-btn" data-section="data">Data</button>
     </nav>
@@ -72,7 +71,18 @@
             <option value="uk">Ukrainian (Українська)</option>
             <option value="vi">Vietnamese (Tiếng Việt)</option>
           </select>
-          <p class="help-text">The language you want to learn.</p>
+          <p class="help-text">The language you want to see translations in.</p>
+        </div>
+
+        <div class="option-group">
+          <h3>Translation Intensity</h3>
+          <label for="translationRateOptions">Translation Rate:</label>
+          <select id="translationRateOptions">
+            <option value="low">Light (10%)</option>
+            <option value="medium">Medium (25%)</option>
+            <option value="high">Intensive (40%)</option>
+          </select>
+          <p class="help-text">Controls what percentage of words on a page get translated.</p>
         </div>
         
         <div class="option-group">
@@ -133,42 +143,6 @@
         </div>
       </section>
 
-      <!-- Learning Settings -->
-      <section id="learning-section" class="option-section">
-        <h2>Learning Settings</h2>
-        
-        <div class="option-group">
-          <h3>Daily Goals</h3>
-          <label for="dailyGoalOptions">Daily Learning Goal:</label>
-          <select id="dailyGoalOptions">
-            <option value="5">5 words per day</option>
-            <option value="10">10 words per day</option>
-            <option value="15">15 words per day</option>
-            <option value="20">20 words per day</option>
-            <option value="25">25 words per day</option>
-            <option value="30">30 words per day</option>
-          </select>
-        </div>
-
-        <div class="option-group">
-          <h3>Learning Statistics</h3>
-          <div class="stats-grid">
-            <div class="stat-card">
-              <div class="stat-number" id="totalLearnedStat">0</div>
-              <div class="stat-label">Total Words Learned</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-number" id="currentStreakStat">0</div>
-              <div class="stat-label">Current Streak (Days)</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-number" id="todayLearnedStat">0</div>
-              <div class="stat-label">Words Learned Today</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <!-- Sites Management -->
       <section id="sites-section" class="option-section">
         <h2>Site Management</h2>
@@ -186,29 +160,10 @@
         <h2>Data Management</h2>
         
         <div class="option-group">
-          <h3>Vocabulary Import/Export</h3>
-          <div class="file-actions">
-            <div class="file-action">
-              <label for="vocabImport" class="file-label">
-                <span>Import Vocabulary</span>
-                <input type="file" id="vocabImport" accept=".json,.csv" hidden>
-              </label>
-              <p class="help-text">Import custom vocabulary from JSON or CSV file</p>
-            </div>
-            
-            <div class="file-action">
-              <button id="exportVocab" class="secondary-btn">Export Learned Words</button>
-              <p class="help-text">Export your learned vocabulary as JSON</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="option-group">
           <h3>Reset Options</h3>
           <div class="danger-zone">
-            <button id="resetLearningProgress" class="danger-btn">Reset Learning Progress</button>
             <button id="resetAllSettings" class="danger-btn">Reset All Settings</button>
-            <p class="help-text danger-text">⚠️ These actions cannot be undone!</p>
+            <p class="help-text danger-text">⚠️ This action cannot be undone!</p>
           </div>
         </div>
       </section>

@@ -140,115 +140,6 @@ input:checked + .slider:before {
     inset -1px -1px 2px rgba(0, 0, 0, 0.1);
 }
 
-.stats-section {
-  display: flex;
-  padding: 24px 28px;
-  background: linear-gradient(135deg, #e8f4f8 0%, #f0e6f7 100%);
-  gap: 16px;
-}
-
-.stat-item {
-  flex: 1;
-  text-align: center;
-  padding: 20px 12px;
-  background: linear-gradient(135deg, #e8f4f8 0%, #f0e6f7 100%);
-  border-radius: 16px;
-  box-shadow: 
-    8px 8px 16px rgba(174, 174, 192, 0.4),
-    -8px -8px 16px rgba(255, 255, 255, 0.8),
-    inset 1px 1px 2px rgba(255, 255, 255, 0.9);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
-}
-
-.stat-item::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
-}
-
-.stat-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 
-    12px 12px 24px rgba(174, 174, 192, 0.5),
-    -12px -12px 24px rgba(255, 255, 255, 0.9),
-    inset 1px 1px 2px rgba(255, 255, 255, 0.9);
-}
-
-.stat-number {
-  font-size: 24px;
-  font-weight: 800;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin-bottom: 6px;
-  line-height: 1;
-}
-
-.stat-label {
-  font-size: 11px;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  font-weight: 600;
-  opacity: 0.8;
-}
-
-.progress-section {
-  padding: 24px 28px;
-  background: linear-gradient(135deg, #e8f4f8 0%, #f0e6f7 100%);
-}
-
-.progress-label {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-  font-size: 13px;
-  color: #475569;
-  font-weight: 600;
-}
-
-.progress-bar {
-  height: 12px;
-  background: linear-gradient(135deg, #e8f4f8 0%, #f0e6f7 100%);
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 
-    inset 4px 4px 8px rgba(174, 174, 192, 0.4),
-    inset -4px -4px 8px rgba(255, 255, 255, 0.8);
-  position: relative;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 12px;
-  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-  width: 0%;
-  position: relative;
-  box-shadow: 
-    2px 2px 6px rgba(102, 126, 234, 0.3),
-    inset 1px 1px 2px rgba(255, 255, 255, 0.3);
-}
-
-.progress-fill::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 50%;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.3) 0%, transparent 100%);
-  border-radius: 12px 12px 0 0;
-}
-
 .settings-section {
   padding: 24px 28px;
   background: linear-gradient(135deg, #e8f4f8 0%, #f0e6f7 100%);
@@ -356,30 +247,6 @@ button {
     inset -4px -4px 8px rgba(255, 255, 255, 0.8);
 }
 
-.danger-btn {
-  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
-  color: white;
-  box-shadow: 
-    6px 6px 12px rgba(255, 107, 107, 0.3),
-    -6px -6px 12px rgba(255, 255, 255, 0.8),
-    inset 1px 1px 2px rgba(255, 255, 255, 0.3);
-}
-
-.danger-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 
-    8px 8px 16px rgba(255, 107, 107, 0.4),
-    -8px -8px 16px rgba(255, 255, 255, 0.9),
-    inset 1px 1px 2px rgba(255, 255, 255, 0.3);
-}
-
-.danger-btn:active {
-  transform: translateY(0);
-  box-shadow: 
-    inset 4px 4px 8px rgba(255, 107, 107, 0.3),
-    inset -4px -4px 8px rgba(255, 255, 255, 0.3);
-}
-
 .footer {
   padding: 16px 28px;
   background: linear-gradient(135deg, #e8f4f8 0%, #f0e6f7 100%);
@@ -427,16 +294,8 @@ button {
   opacity: 0.6;
 }
 
-.disabled .stats-section,
-.disabled .progress-section,
 .disabled .settings-section {
   pointer-events: none;
-}
-
-.disabled .stat-item {
-  box-shadow: 
-    inset 4px 4px 8px rgba(174, 174, 192, 0.3),
-    inset -4px -4px 8px rgba(255, 255, 255, 0.6);
 }
 
 /* Smooth animations */
@@ -465,18 +324,8 @@ button {
     padding: 20px 24px;
   }
   
-  .stats-section,
-  .progress-section,
   .settings-section,
   .actions {
     padding: 20px 24px;
-  }
-  
-  .stat-item {
-    padding: 16px 8px;
-  }
-  
-  .stat-number {
-    font-size: 20px;
   }
 }
