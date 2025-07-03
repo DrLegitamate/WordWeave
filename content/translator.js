@@ -10,11 +10,14 @@ class Translator {
     this.maxRetries = 3;
     this.progressBar = null;
     
+    console.log('WordWeave: Translator constructor called');
     this.initialize();
   }
 
   async initialize() {
     try {
+      console.log('WordWeave: Starting initialization...');
+      
       // Check if site is excluded
       const excludeResponse = await browser.runtime.sendMessage({ 
         type: 'CHECK_SITE_EXCLUDED' 
@@ -32,7 +35,7 @@ class Translator {
         return;
       }
       
-      console.log('WordWeave: Extension initialized, enabled:', this.state.enabled);
+      console.log('WordWeave: Extension initialized, state:', this.state);
       
       this.setupMessageListener();
       this.setupMutationObserver();
@@ -41,7 +44,10 @@ class Translator {
       
       // Process page if extension is enabled
       if (this.state.enabled) {
+        console.log('WordWeave: Extension is enabled, starting page processing...');
         setTimeout(() => this.processPage(), 1000);
+      } else {
+        console.log('WordWeave: Extension is disabled');
       }
       
     } catch (error) {
@@ -64,11 +70,12 @@ class Translator {
       <div class="gt-progress-bar">
         <div class="gt-progress-fill"></div>
       </div>
-      <div class="gt-progress-text">WordWeave: Preparing...</div>
+      <div class="gt-progress-text">WordWeave: Ready</div>
     `;
 
     document.body.appendChild(progressContainer);
     this.progressBar = progressContainer;
+    console.log('WordWeave: Progress bar created');
   }
 
   updateProgress(current, total, status = 'Translating...') {
@@ -80,13 +87,16 @@ class Translator {
     if (progressFill && progressText) {
       const percentage = total > 0 ? Math.round((current / total) * 100) : 0;
       progressFill.style.width = `${percentage}%`;
-      progressText.textContent = `WordWeave: ${status}`;
+      progressText.textContent = `WordWeave: ${status} (${percentage}%)`;
+      console.log(`WordWeave: Progress ${percentage}% - ${status}`);
     }
   }
 
   showProgress() {
     if (this.progressBar) {
       this.progressBar.classList.add('gt-progress-show');
+      this.progressBar.style.display = 'flex';
+      console.log('WordWeave: Progress bar shown');
     }
   }
 
@@ -97,17 +107,24 @@ class Translator {
         if (this.progressBar && !this.progressBar.classList.contains('gt-progress-show')) {
           this.progressBar.style.display = 'none';
         }
-      }, 500);
+      }, 2000);
+      console.log('WordWeave: Progress bar hidden');
     }
   }
 
   setupMessageListener() {
     browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+      console.log('WordWeave: Received message:', message.type);
+      
       if (message.type === 'STATE_UPDATED') {
         this.state = message.payload;
+        console.log('WordWeave: State updated:', this.state);
+        
         if (this.state.enabled) {
+          console.log('WordWeave: Extension enabled, processing page...');
           this.processPage();
         } else {
+          console.log('WordWeave: Extension disabled, restoring content...');
           this.restoreOriginalContent();
           this.hideProgress();
         }
@@ -138,6 +155,7 @@ class Translator {
       }
 
       if (newNodes.length > 0) {
+        console.log('WordWeave: New nodes detected:', newNodes.length);
         this.processNewNodes(newNodes);
       }
     });
@@ -154,6 +172,8 @@ class Translator {
 
   async translateSelection(text) {
     try {
+      console.log('WordWeave: Translating selection:', text);
+      
       const response = await browser.runtime.sendMessage({
         type: 'TRANSLATE_TEXT',
         payload: {
@@ -289,118 +309,107 @@ class Translator {
     const text = element.textContent.trim();
     
     // Must have reasonable text length
-    if (text.length < 10) return false;
+    if (text.length < 5) return false;
     
     // Must contain actual words (not just numbers/symbols)
-    const wordCount = (text.match(/\b[a-zA-ZÀ-ÿĀ-žА-я]{3,}\b/g) || []).length;
-    if (wordCount < 2) return false;
+    const wordCount = (text.match(/\b[a-zA-ZÀ-ÿĀ-žА-я]{2,}\b/g) || []).length;
+    if (wordCount < 1) return false;
     
-    // Check if this element has direct text content (not just from children)
-    const directText = Array.from(element.childNodes)
-      .filter(node => node.nodeType === Node.TEXT_NODE)
-      .map(node => node.textContent.trim())
-      .join(' ')
-      .trim();
-    
-    // If element has direct text content OR is a leaf element with text, it's processable
-    return directText.length > 0 || (element.children.length === 0 && text.length > 0);
+    return true;
   }
 
   findTextContainers() {
+    console.log('WordWeave: Finding text containers...');
+    
     const containers = [];
     
-    // Strategy 1: Find elements with direct text content
-    const walker = document.createTreeWalker(
-      document.body,
-      NodeFilter.SHOW_ELEMENT,
-      {
-        acceptNode: (node) => {
-          if (this.shouldSkipElement(node)) {
-            return NodeFilter.FILTER_REJECT;
-          }
-          
-          // Accept elements that contain text
-          if (this.isTextContainer(node)) {
-            return NodeFilter.FILTER_ACCEPT;
-          }
-          
-          return NodeFilter.FILTER_SKIP;
-        }
-      }
-    );
-
-    let node;
-    while (node = walker.nextNode()) {
-      containers.push(node);
-    }
-
-    // Strategy 2: Also check common content containers
-    const commonSelectors = [
-      'p', 'div', 'span', 'article', 'section', 'main', 'aside',
-      'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-      'li', 'td', 'th', 'blockquote', 'figcaption',
-      'a', 'strong', 'em', 'b', 'i', 'mark', 'small'
-    ];
-
-    commonSelectors.forEach(selector => {
-      const elements = document.querySelectorAll(selector);
-      elements.forEach(element => {
-        if (this.isTextContainer(element) && !containers.includes(element)) {
+    // Find all text-containing elements
+    const allElements = document.querySelectorAll('*');
+    console.log(`WordWeave: Checking ${allElements.length} elements`);
+    
+    allElements.forEach(element => {
+      if (this.isTextContainer(element)) {
+        // Check if this element has children with text - if so, skip it to avoid duplicates
+        const hasTextChildren = Array.from(element.children).some(child => 
+          this.isTextContainer(child)
+        );
+        
+        if (!hasTextChildren) {
           containers.push(element);
         }
-      });
+      }
     });
 
-    // Remove nested elements (keep only the most specific containers)
-    return containers.filter(container => {
-      return !containers.some(other => 
-        other !== container && other.contains(container) && 
-        other.textContent.trim() === container.textContent.trim()
-      );
+    console.log(`WordWeave: Found ${containers.length} text containers`);
+    
+    // Log some examples
+    containers.slice(0, 5).forEach((container, index) => {
+      console.log(`WordWeave: Container ${index + 1}:`, container.tagName, container.textContent.substring(0, 100));
     });
+
+    return containers;
   }
 
   extractWordsFromElement(element) {
     const text = element.textContent.trim();
     if (!text) return [];
 
-    // Extract words using improved regex - focus on actual words
-    const words = text.match(/\b[a-zA-ZÀ-ÿĀ-žА-я]{3,15}\b/g) || [];
+    console.log('WordWeave: Extracting words from text:', text.substring(0, 100));
+
+    // Extract words using improved regex
+    const words = text.match(/\b[a-zA-ZÀ-ÿĀ-žА-я]{2,15}\b/g) || [];
     
-    // Filter out common words and already cached words
+    console.log('WordWeave: Found words:', words.slice(0, 10));
+    
+    // Filter out very common English words and already cached words
     const commonWords = new Set([
-      'the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'had', 'her', 'was', 'one', 'our', 'out', 'day', 'get', 'has', 'him', 'his', 'how', 'its', 'may', 'new', 'now', 'old', 'see', 'two', 'who', 'boy', 'did', 'she', 'use', 'way', 'what', 'when', 'with', 'have', 'this', 'will', 'your', 'from', 'they', 'know', 'want', 'been', 'good', 'much', 'some', 'time', 'very', 'when', 'come', 'here', 'just', 'like', 'long', 'make', 'many', 'over', 'such', 'take', 'than', 'them', 'well', 'were'
+      'the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'had', 
+      'her', 'was', 'one', 'our', 'out', 'day', 'get', 'has', 'him', 'his', 
+      'how', 'its', 'may', 'new', 'now', 'old', 'see', 'two', 'who', 'boy', 
+      'did', 'she', 'use', 'way', 'what', 'when', 'with', 'have', 'this', 
+      'will', 'your', 'from', 'they', 'know', 'want', 'been', 'good', 'much', 
+      'some', 'time', 'very', 'come', 'here', 'just', 'like', 'long', 'make', 
+      'many', 'over', 'such', 'take', 'than', 'them', 'well', 'were', 'is', 
+      'it', 'be', 'to', 'of', 'as', 'at', 'by', 'he', 'in', 'on', 'we', 'an', 
+      'do', 'if', 'me', 'my', 'no', 'so', 'up', 'am', 'go', 'or'
     ]);
     
-    return words.filter(word => {
+    const filteredWords = words.filter(word => {
       const lowerWord = word.toLowerCase();
       return !commonWords.has(lowerWord) &&
              !this.translationCache.has(lowerWord) &&
-             word.length >= 3 && 
+             word.length >= 2 && 
              word.length <= 15 &&
              !/^\d+$/.test(word); // Not just numbers
     });
+    
+    console.log('WordWeave: Filtered words:', filteredWords);
+    return filteredWords;
   }
 
   async processPage() {
-    if (!this.state?.enabled || this.isProcessing) return;
+    if (!this.state?.enabled || this.isProcessing) {
+      console.log('WordWeave: Cannot process page - disabled or already processing');
+      return;
+    }
     
     this.isProcessing = true;
-    console.log('WordWeave: Processing page for translation...');
+    console.log('WordWeave: Starting page processing...');
 
     try {
       // Show progress bar
       this.showProgress();
-      this.updateProgress(0, 100, 'Finding text containers...');
+      this.updateProgress(0, 100, 'Finding text...');
 
-      // Find all text containers using improved strategy
+      // Find all text containers
       const containers = this.findTextContainers();
       
       console.log(`WordWeave: Found ${containers.length} text containers to process`);
 
       if (containers.length === 0) {
         console.log('WordWeave: No suitable text containers found');
-        this.hideProgress();
+        this.updateProgress(100, 100, 'No text found');
+        setTimeout(() => this.hideProgress(), 2000);
         this.isProcessing = false;
         return;
       }
@@ -409,17 +418,20 @@ class Translator {
       containers.sort((a, b) => b.textContent.length - a.textContent.length);
 
       // Process containers in batches
-      const batchSize = 5;
-      const totalBatches = Math.ceil(Math.min(containers.length, 50) / batchSize);
+      const maxContainers = Math.min(containers.length, 20); // Limit for performance
+      const batchSize = 3;
+      const totalBatches = Math.ceil(maxContainers / batchSize);
       let processedBatches = 0;
 
-      for (let i = 0; i < Math.min(containers.length, 50); i += batchSize) {
+      console.log(`WordWeave: Processing ${maxContainers} containers in ${totalBatches} batches`);
+
+      for (let i = 0; i < maxContainers; i += batchSize) {
         const batch = containers.slice(i, i + batchSize);
         
         this.updateProgress(
           processedBatches, 
           totalBatches, 
-          `Processing batch ${processedBatches + 1}/${totalBatches}...`
+          `Processing batch ${processedBatches + 1}/${totalBatches}`
         );
         
         await this.processBatch(batch);
@@ -428,8 +440,8 @@ class Translator {
         // Update progress
         this.updateProgress(processedBatches, totalBatches, 'Processing...');
         
-        // Small delay between batches to avoid overwhelming the page
-        await new Promise(resolve => setTimeout(resolve, 300));
+        // Small delay between batches
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
 
       // Complete
@@ -438,21 +450,27 @@ class Translator {
       // Hide progress bar after a short delay
       setTimeout(() => {
         this.hideProgress();
-      }, 2000);
+      }, 3000);
 
     } catch (error) {
       console.error('WordWeave: Error processing page:', error);
-      this.hideProgress();
+      this.updateProgress(0, 100, 'Error occurred');
+      setTimeout(() => this.hideProgress(), 2000);
     } finally {
       this.isProcessing = false;
     }
   }
 
   async processBatch(elements) {
+    console.log(`WordWeave: Processing batch of ${elements.length} elements`);
+    
     for (const element of elements) {
       try {
         const words = this.extractWordsFromElement(element);
-        if (words.length === 0) continue;
+        if (words.length === 0) {
+          console.log('WordWeave: No words to translate in element');
+          continue;
+        }
 
         // Apply translation rate filter
         const rateMultipliers = { low: 0.1, medium: 0.25, high: 0.4 };
@@ -461,7 +479,7 @@ class Translator {
         // Select words to translate based on rate
         const shuffledWords = words.sort(() => Math.random() - 0.5);
         const maxWords = Math.max(1, Math.floor(words.length * rate));
-        const wordsToTranslate = shuffledWords.slice(0, Math.min(maxWords, 8));
+        const wordsToTranslate = shuffledWords.slice(0, Math.min(maxWords, 5)); // Limit to 5 words per element
 
         console.log(`WordWeave: Translating ${wordsToTranslate.length} words from element:`, wordsToTranslate);
 
@@ -476,6 +494,7 @@ class Translator {
         if (Object.keys(translations).length > 0) {
           this.applyTranslationsToElement(element, translations);
           this.processedElements.add(element);
+          console.log('WordWeave: Applied translations to element');
         }
 
       } catch (error) {
@@ -491,6 +510,7 @@ class Translator {
       try {
         if (this.translationCache.has(word.toLowerCase())) {
           translations[word] = this.translationCache.get(word.toLowerCase());
+          console.log(`WordWeave: Using cached translation for "${word}"`);
           continue;
         }
 
@@ -512,6 +532,9 @@ class Translator {
           console.log(`WordWeave: No translation for "${word}"`);
         }
 
+        // Small delay between translations to avoid overwhelming the service
+        await new Promise(resolve => setTimeout(resolve, 100));
+
       } catch (error) {
         console.error(`WordWeave: Error translating word "${word}":`, error);
       }
@@ -523,7 +546,7 @@ class Translator {
   applyTranslationsToElement(element, translations) {
     console.log('WordWeave: Applying translations to element:', translations);
     
-    // Use TreeWalker to process only text nodes, avoiding HTML contamination
+    // Get all text nodes in the element
     const walker = document.createTreeWalker(
       element,
       NodeFilter.SHOW_TEXT,
@@ -548,12 +571,14 @@ class Translator {
       textNodes.push(node);
     }
 
+    console.log(`WordWeave: Found ${textNodes.length} text nodes to process`);
+
     // Process each text node
-    textNodes.forEach(textNode => {
+    textNodes.forEach((textNode, index) => {
       let textContent = textNode.textContent;
       let hasChanges = false;
-      const fragments = [];
-      let lastIndex = 0;
+
+      console.log(`WordWeave: Processing text node ${index + 1}: "${textContent.substring(0, 50)}..."`);
 
       // Sort translations by length (longest first) to avoid partial matches
       const sortedTranslations = Object.entries(translations)
@@ -576,7 +601,12 @@ class Translator {
         }
       });
 
-      if (allMatches.length === 0) return;
+      if (allMatches.length === 0) {
+        console.log('WordWeave: No matches found in text node');
+        return;
+      }
+
+      console.log(`WordWeave: Found ${allMatches.length} matches in text node`);
 
       // Sort matches by position
       allMatches.sort((a, b) => a.index - b.index);
@@ -592,10 +622,17 @@ class Translator {
         }
       });
 
-      if (nonOverlapping.length === 0) return;
+      if (nonOverlapping.length === 0) {
+        console.log('WordWeave: No non-overlapping matches');
+        return;
+      }
+
+      console.log(`WordWeave: Processing ${nonOverlapping.length} non-overlapping matches`);
 
       // Build fragments
-      lastIndex = 0;
+      const fragments = [];
+      let lastIndex = 0;
+      
       nonOverlapping.forEach(match => {
         // Add text before the match
         if (match.index > lastIndex) {
@@ -644,12 +681,13 @@ class Translator {
             span.style.fontSize = fontSizes[this.state.fontSize] || '1em';
             
             documentFragment.appendChild(span);
+            hasChanges = true;
           }
         });
         
         // Replace the original text node
         textNode.parentNode.replaceChild(documentFragment, textNode);
-        console.log('WordWeave: Applied translations to text node');
+        console.log('WordWeave: Successfully applied translations to text node');
       }
     });
   }
@@ -659,6 +697,7 @@ class Translator {
     
     const textContainers = nodes.filter(node => this.isTextContainer(node));
     if (textContainers.length > 0) {
+      console.log(`WordWeave: Processing ${textContainers.length} new nodes`);
       setTimeout(() => this.processBatch(textContainers), 500);
     }
   }
@@ -667,6 +706,8 @@ class Translator {
     console.log('WordWeave: Restoring original content');
     
     const translatedElements = document.querySelectorAll('.gt-word');
+    console.log(`WordWeave: Found ${translatedElements.length} translated elements to restore`);
+    
     translatedElements.forEach(element => {
       const original = element.getAttribute('data-original');
       if (original) {
@@ -700,8 +741,14 @@ class Translator {
 }
 
 // Initialize translator when DOM is ready
+console.log('WordWeave: Content script loaded');
+
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => new Translator());
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log('WordWeave: DOM loaded, initializing translator');
+    new Translator();
+  });
 } else {
+  console.log('WordWeave: DOM already loaded, initializing translator immediately');
   new Translator();
 }

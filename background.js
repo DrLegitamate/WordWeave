@@ -93,18 +93,24 @@ const TRANSLATION_SERVICES = {
 // Initialize state from storage
 browser.storage.local.get().then(result => {
   state = { ...state, ...result };
+  console.log('WordWeave Background: State loaded:', state);
 });
 
 // Listen for messages from content scripts and popup
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  console.log('WordWeave Background: Received message:', message.type);
+  
   switch (message.type) {
     case 'GET_STATE':
+      console.log('WordWeave Background: Sending state:', state);
       sendResponse(state);
       break;
       
     case 'UPDATE_STATE':
       state = { ...state, ...message.payload };
       browser.storage.local.set(message.payload);
+      
+      console.log('WordWeave Background: State updated:', state);
       
       // Notify all content scripts of state change
       browser.tabs.query({}).then(tabs => {
@@ -123,12 +129,14 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
       break;
       
     case 'TRANSLATE_TEXT':
+      console.log('WordWeave Background: Translating text:', message.payload.text);
       translateText(message.payload.text, state.targetLanguage, message.payload.sourceLang)
         .then(translation => {
+          console.log('WordWeave Background: Translation result:', translation);
           sendResponse({ translation });
         })
         .catch(error => {
-          console.error('Translation error:', error);
+          console.error('WordWeave Background: Translation error:', error);
           sendResponse({ error: error.message });
         });
       return true;
@@ -138,11 +146,13 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
       const isExcluded = state.excludedSites.some(site => 
         url.hostname.includes(site) || site.includes(url.hostname)
       );
+      console.log('WordWeave Background: Site exclusion check:', url.hostname, isExcluded);
       sendResponse({ excluded: isExcluded });
       break;
 
     case 'DETECT_LANGUAGE':
       const detectedLang = LANGUAGE_DETECTOR.detectLanguage(message.payload.text);
+      console.log('WordWeave Background: Language detected:', detectedLang);
       sendResponse({ language: detectedLang });
       break;
   }
@@ -150,6 +160,8 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 async function translateText(text, targetLang, sourceLang = null) {
   const service = TRANSLATION_SERVICES[state.translationService] || TRANSLATION_SERVICES.libretranslate;
+  
+  console.log('WordWeave Background: Using translation service:', state.translationService);
   
   try {
     let sourceLanguage = sourceLang;
@@ -164,7 +176,14 @@ async function translateText(text, targetLang, sourceLang = null) {
       }
     }
     
+    console.log('WordWeave Background: Translation params:', {
+      text: text.substring(0, 50),
+      source: sourceLanguage,
+      target: targetLang
+    });
+    
     if (sourceLanguage === targetLang && sourceLanguage !== 'auto') {
+      console.log('WordWeave Background: Source and target languages are the same, returning original text');
       return text;
     }
     
@@ -180,6 +199,8 @@ async function translateText(text, targetLang, sourceLang = null) {
       url += service.formatRequest(text, targetLang, sourceLanguage);
     }
     
+    console.log('WordWeave Background: Making request to:', url);
+    
     const response = await fetch(url, options);
     
     if (!response.ok) {
@@ -187,6 +208,7 @@ async function translateText(text, targetLang, sourceLang = null) {
     }
     
     const data = await response.json();
+    console.log('WordWeave Background: Translation response:', data);
     
     if (service === TRANSLATION_SERVICES.mymemory && data.responseStatus !== 200) {
       throw new Error(`MyMemory API error: ${data.responseDetails || 'Unknown error'}`);
@@ -198,13 +220,15 @@ async function translateText(text, targetLang, sourceLang = null) {
       throw new Error('Empty translation received');
     }
     
+    console.log('WordWeave Background: Final translation:', translation);
     return translation;
     
   } catch (error) {
-    console.error('Translation failed:', error);
+    console.error('WordWeave Background: Translation failed:', error);
     
     if (state.translationService !== 'mymemory') {
       try {
+        console.log('WordWeave Background: Trying fallback service...');
         const fallbackService = TRANSLATION_SERVICES.mymemory;
         const fallbackSourceLang = sourceLang || LANGUAGE_DETECTOR.detectLanguage(text);
         const fallbackUrl = fallbackService.url + fallbackService.formatRequest(text, targetLang, fallbackSourceLang);
@@ -219,9 +243,11 @@ async function translateText(text, targetLang, sourceLang = null) {
           throw new Error(`Fallback API error: ${fallbackData.responseDetails}`);
         }
         
-        return fallbackService.parseResponse(fallbackData);
+        const fallbackTranslation = fallbackService.parseResponse(fallbackData);
+        console.log('WordWeave Background: Fallback translation successful:', fallbackTranslation);
+        return fallbackTranslation;
       } catch (fallbackError) {
-        console.error('Fallback translation failed:', fallbackError);
+        console.error('WordWeave Background: Fallback translation failed:', fallbackError);
         throw new Error('All translation services failed');
       }
     }
