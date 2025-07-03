@@ -80,7 +80,7 @@ class Translator {
     if (progressFill && progressText) {
       const percentage = total > 0 ? Math.round((current / total) * 100) : 0;
       progressFill.style.width = `${percentage}%`;
-      progressText.textContent = `WordWeave: ${status} (${current}/${total})`;
+      progressText.textContent = `WordWeave: ${status}`;
     }
   }
 
@@ -289,10 +289,10 @@ class Translator {
     const text = element.textContent.trim();
     
     // Must have reasonable text length
-    if (text.length < 5) return false;
+    if (text.length < 10) return false;
     
     // Must contain actual words (not just numbers/symbols)
-    const wordCount = (text.match(/\b[a-zA-ZÀ-ÿĀ-žА-я]{2,}\b/g) || []).length;
+    const wordCount = (text.match(/\b[a-zA-ZÀ-ÿĀ-žА-я]{3,}\b/g) || []).length;
     if (wordCount < 2) return false;
     
     // Check if this element has direct text content (not just from children)
@@ -364,14 +364,21 @@ class Translator {
     const text = element.textContent.trim();
     if (!text) return [];
 
-    // Extract words using improved regex
-    const words = text.match(/\b[a-zA-ZÀ-ÿĀ-žА-я]{2,20}\b/g) || [];
+    // Extract words using improved regex - focus on actual words
+    const words = text.match(/\b[a-zA-ZÀ-ÿĀ-žА-я]{3,15}\b/g) || [];
+    
+    // Filter out common words and already cached words
+    const commonWords = new Set([
+      'the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'had', 'her', 'was', 'one', 'our', 'out', 'day', 'get', 'has', 'him', 'his', 'how', 'its', 'may', 'new', 'now', 'old', 'see', 'two', 'who', 'boy', 'did', 'she', 'use', 'way', 'what', 'when', 'with', 'have', 'this', 'will', 'your', 'from', 'they', 'know', 'want', 'been', 'good', 'much', 'some', 'time', 'very', 'when', 'come', 'here', 'just', 'like', 'long', 'make', 'many', 'over', 'such', 'take', 'than', 'them', 'well', 'were'
+    ]);
     
     return words.filter(word => {
       const lowerWord = word.toLowerCase();
-      return !this.translationCache.has(lowerWord) &&
-             word.length >= 2 && 
-             word.length <= 20;
+      return !commonWords.has(lowerWord) &&
+             !this.translationCache.has(lowerWord) &&
+             word.length >= 3 && 
+             word.length <= 15 &&
+             !/^\d+$/.test(word); // Not just numbers
     });
   }
 
@@ -402,11 +409,11 @@ class Translator {
       containers.sort((a, b) => b.textContent.length - a.textContent.length);
 
       // Process containers in batches
-      const batchSize = 8;
-      const totalBatches = Math.ceil(Math.min(containers.length, 100) / batchSize);
+      const batchSize = 5;
+      const totalBatches = Math.ceil(Math.min(containers.length, 50) / batchSize);
       let processedBatches = 0;
 
-      for (let i = 0; i < Math.min(containers.length, 100); i += batchSize) {
+      for (let i = 0; i < Math.min(containers.length, 50); i += batchSize) {
         const batch = containers.slice(i, i + batchSize);
         
         this.updateProgress(
@@ -422,7 +429,7 @@ class Translator {
         this.updateProgress(processedBatches, totalBatches, 'Processing...');
         
         // Small delay between batches to avoid overwhelming the page
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise(resolve => setTimeout(resolve, 300));
       }
 
       // Complete
@@ -454,12 +461,16 @@ class Translator {
         // Select words to translate based on rate
         const shuffledWords = words.sort(() => Math.random() - 0.5);
         const maxWords = Math.max(1, Math.floor(words.length * rate));
-        const wordsToTranslate = shuffledWords.slice(0, Math.min(maxWords, 5));
+        const wordsToTranslate = shuffledWords.slice(0, Math.min(maxWords, 8));
+
+        console.log(`WordWeave: Translating ${wordsToTranslate.length} words from element:`, wordsToTranslate);
 
         if (wordsToTranslate.length === 0) continue;
 
         // Translate words
         const translations = await this.translateWords(wordsToTranslate);
+        
+        console.log('WordWeave: Got translations:', translations);
         
         // Apply translations to element
         if (Object.keys(translations).length > 0) {
@@ -483,6 +494,8 @@ class Translator {
           continue;
         }
 
+        console.log(`WordWeave: Translating word: "${word}"`);
+
         const response = await browser.runtime.sendMessage({
           type: 'TRANSLATE_TEXT',
           payload: {
@@ -492,8 +505,11 @@ class Translator {
         });
 
         if (response && response.translation && response.translation !== word) {
+          console.log(`WordWeave: Translation result: "${word}" -> "${response.translation}"`);
           translations[word] = response.translation;
           this.translationCache.set(word.toLowerCase(), response.translation);
+        } else {
+          console.log(`WordWeave: No translation for "${word}"`);
         }
 
       } catch (error) {
@@ -505,6 +521,8 @@ class Translator {
   }
 
   applyTranslationsToElement(element, translations) {
+    console.log('WordWeave: Applying translations to element:', translations);
+    
     // Use TreeWalker to process only text nodes, avoiding HTML contamination
     const walker = document.createTreeWalker(
       element,
@@ -542,113 +560,96 @@ class Translator {
         .sort(([a], [b]) => b.length - a.length);
 
       // Find all word matches in this text node
+      const allMatches = [];
+      
       sortedTranslations.forEach(([original, translation]) => {
         const regex = new RegExp(`\\b(${this.escapeRegExp(original)})\\b`, 'gi');
         let match;
-        const matches = [];
         
-        // Collect all matches first
         while ((match = regex.exec(textContent)) !== null) {
-          matches.push({
+          allMatches.push({
             index: match.index,
             length: match[1].length,
             original: match[1],
             translation: translation
           });
         }
-        
-        // Apply matches in reverse order to maintain indices
-        matches.reverse().forEach(matchInfo => {
-          if (matchInfo.index >= lastIndex) {
-            // Mark that we have changes
-            hasChanges = true;
-          }
-        });
       });
 
-      // If we have changes, rebuild the content
-      if (hasChanges) {
-        const allMatches = [];
-        
-        // Collect all matches with their positions
-        sortedTranslations.forEach(([original, translation]) => {
-          const regex = new RegExp(`\\b(${this.escapeRegExp(original)})\\b`, 'gi');
-          let match;
-          
-          while ((match = regex.exec(textContent)) !== null) {
-            allMatches.push({
-              index: match.index,
-              length: match[1].length,
-              original: match[1],
-              translation: translation
-            });
-          }
-        });
+      if (allMatches.length === 0) return;
 
-        // Sort matches by position
-        allMatches.sort((a, b) => a.index - b.index);
+      // Sort matches by position
+      allMatches.sort((a, b) => a.index - b.index);
 
-        // Remove overlapping matches (keep first occurrence)
-        const nonOverlapping = [];
-        let lastEnd = 0;
-        
-        allMatches.forEach(match => {
-          if (match.index >= lastEnd) {
-            nonOverlapping.push(match);
-            lastEnd = match.index + match.length;
-          }
-        });
+      // Remove overlapping matches (keep first occurrence)
+      const nonOverlapping = [];
+      let lastEnd = 0;
+      
+      allMatches.forEach(match => {
+        if (match.index >= lastEnd) {
+          nonOverlapping.push(match);
+          lastEnd = match.index + match.length;
+        }
+      });
 
-        // Build fragments
-        lastIndex = 0;
-        nonOverlapping.forEach(match => {
-          // Add text before the match
-          if (match.index > lastIndex) {
-            fragments.push({
-              type: 'text',
-              content: textContent.substring(lastIndex, match.index)
-            });
-          }
-          
-          // Add the translated word
-          fragments.push({
-            type: 'translation',
-            original: match.original,
-            translation: match.translation
-          });
-          
-          lastIndex = match.index + match.length;
-        });
+      if (nonOverlapping.length === 0) return;
 
-        // Add remaining text
-        if (lastIndex < textContent.length) {
+      // Build fragments
+      lastIndex = 0;
+      nonOverlapping.forEach(match => {
+        // Add text before the match
+        if (match.index > lastIndex) {
           fragments.push({
             type: 'text',
-            content: textContent.substring(lastIndex)
+            content: textContent.substring(lastIndex, match.index)
           });
         }
+        
+        // Add the translated word
+        fragments.push({
+          type: 'translation',
+          original: match.original,
+          translation: match.translation
+        });
+        
+        lastIndex = match.index + match.length;
+      });
 
-        // Replace the text node with fragments
-        if (fragments.length > 0) {
-          const documentFragment = document.createDocumentFragment();
-          
-          fragments.forEach(fragment => {
-            if (fragment.type === 'text') {
-              if (fragment.content) {
-                documentFragment.appendChild(document.createTextNode(fragment.content));
-              }
-            } else if (fragment.type === 'translation') {
-              const span = document.createElement('span');
-              span.className = 'gt-word';
-              span.setAttribute('data-original', fragment.original);
-              span.textContent = fragment.translation;
-              documentFragment.appendChild(span);
+      // Add remaining text
+      if (lastIndex < textContent.length) {
+        fragments.push({
+          type: 'text',
+          content: textContent.substring(lastIndex)
+        });
+      }
+
+      // Replace the text node with fragments
+      if (fragments.length > 0) {
+        const documentFragment = document.createDocumentFragment();
+        
+        fragments.forEach(fragment => {
+          if (fragment.type === 'text') {
+            if (fragment.content) {
+              documentFragment.appendChild(document.createTextNode(fragment.content));
             }
-          });
-          
-          // Replace the original text node
-          textNode.parentNode.replaceChild(documentFragment, textNode);
-        }
+          } else if (fragment.type === 'translation') {
+            const span = document.createElement('span');
+            span.className = 'gt-word';
+            span.setAttribute('data-original', fragment.original);
+            span.textContent = fragment.translation;
+            
+            // Apply custom styling
+            span.style.setProperty('--gt-highlight-color', this.state.highlightColor || '#4a90e2');
+            const fontSizes = { small: '0.9em', medium: '1em', large: '1.1em' };
+            span.style.fontSize = fontSizes[this.state.fontSize] || '1em';
+            
+            documentFragment.appendChild(span);
+          }
+        });
+        
+        // Replace the original text node
+        textNode.parentNode.replaceChild(documentFragment, textNode);
+        console.log('WordWeave: Applied translations to text node');
       }
     });
   }
