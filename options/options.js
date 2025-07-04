@@ -97,9 +97,6 @@ function setupEventListeners() {
   // Site management
   document.getElementById('addCurrentSite').addEventListener('click', addCurrentSite);
   
-  // Reset operations
-  document.getElementById('resetAllSettings').addEventListener('click', resetAllSettings);
-  
   // Save operations
   document.getElementById('saveOptions').addEventListener('click', saveAllOptions);
   document.getElementById('resetToDefaults').addEventListener('click', resetToDefaults);
@@ -215,37 +212,6 @@ async function addCurrentSite() {
     }
   } catch (error) {
     updateSaveStatus('Failed to add current site', 'error');
-  }
-}
-
-async function resetAllSettings() {
-  if (!confirm('Are you sure you want to reset ALL settings to defaults? This action cannot be undone.')) {
-    return;
-  }
-  
-  try {
-    const defaults = {
-      enabled: false,
-      translationRate: 'moderate',
-      targetLanguage: 'es',
-      sourceLanguage: 'en',
-      autoDetectLanguage: true,
-      translateHeaders: true,
-      translateNav: true,
-      showTooltips: true,
-      highlightColor: '#4a90e2',
-      fontSize: 'medium',
-      translationService: 'libretranslate',
-      excludedSites: []
-    };
-    
-    await updateState(defaults);
-    
-    // Reload page to show default values
-    location.reload();
-    
-  } catch (error) {
-    updateSaveStatus('Reset failed', 'error');
   }
 }
 
