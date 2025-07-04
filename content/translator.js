@@ -8,6 +8,7 @@ class Translator {
     this.retryCount = 0;
     this.maxRetries = 3;
     this.progressBar = null;
+    this.commonWords = new Set();
 
     console.log('WordWeave: Translator constructor called');
     this.initialize();
@@ -42,13 +43,15 @@ class Translator {
         console.warn('WordWeave: Could not check site exclusion:', error);
       }
 
+      // Load common words for the detected language
+      await this.loadCommonWords();
+
       this.setupMessageListener();
       this.createProgressBar();
       this.setupMutationObserver();
 
       if (this.state.enabled) {
         console.log('WordWeave: Extension is enabled, starting page processing...');
-        // Small delay to let page finish loading
         setTimeout(() => this.processPage(), 1000);
       } else {
         console.log('WordWeave: Extension is disabled.');
@@ -59,8 +62,23 @@ class Translator {
     }
   }
 
+  async loadCommonWords() {
+    try {
+      const response = await browser.runtime.sendMessage({
+        type: 'GET_WORD_FREQUENCY',
+        payload: { language: this.state.sourceLanguage }
+      });
+      
+      if (response?.commonWords) {
+        this.commonWords = new Set(response.commonWords);
+        console.log(`WordWeave: Loaded ${this.commonWords.size} common words`);
+      }
+    } catch (error) {
+      console.warn('WordWeave: Could not load common words:', error);
+    }
+  }
+
   createProgressBar() {
-    // Remove existing progress bar if any
     const existingBar = document.querySelector('.gt-progress-container');
     if (existingBar) {
       existingBar.remove();
@@ -125,10 +143,15 @@ class Translator {
     });
   }
 
-  onStateUpdated(newState) {
+  async onStateUpdated(newState) {
     console.log('WordWeave: State updated:', newState);
     const wasEnabled = this.state.enabled;
     this.state = newState;
+
+    // Reload common words if source language changed
+    if (newState.sourceLanguage !== this.state.sourceLanguage) {
+      await this.loadCommonWords();
+    }
 
     if (this.state.enabled && !wasEnabled) {
       console.log('WordWeave: Extension enabled, processing page...');
@@ -251,7 +274,6 @@ class Translator {
     console.log('WordWeave: Finding text containers...');
     const containers = [];
     
-    // Get all text-containing elements
     const walker = document.createTreeWalker(
       document.body,
       NodeFilter.SHOW_ELEMENT,
@@ -259,10 +281,9 @@ class Translator {
         acceptNode: (node) => {
           if (this.shouldSkipElement(node)) return NodeFilter.FILTER_REJECT;
           
-          // Check if element has direct text content (not just from children)
           const hasDirectText = Array.from(node.childNodes).some(child => 
             child.nodeType === Node.TEXT_NODE && 
-            child.textContent.trim().length > 10
+            child.textContent.trim().length > 15
           );
           
           if (hasDirectText) {
@@ -282,36 +303,117 @@ class Translator {
     }
 
     console.log(`WordWeave: Found ${containers.length} text containers`);
-    return containers.slice(0, 30); // Limit to 30 containers for performance
+    return containers.slice(0, 50); // Increased limit for better coverage
   }
 
   extractWordsFromElement(element) {
     const text = element.textContent || "";
-    // More inclusive word matching - 2-20 characters, including accented characters
-    const words = text.match(/\b[a-zA-Z\u00C0-\u017F\u0100-\u024F]{2,20}\b/g) || [];
+    const words = text.match(/\b[a-zA-Z\u00C0-\u017F\u0100-\u024F]{3,20}\b/g) || [];
     
     if (words.length === 0) return [];
     
-    // Filter out common English words and duplicates
-    const commonWords = new Set([
-      'the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'was', 'one', 
-      'our', 'has', 'his', 'its', 'new', 'now', 'see', 'two', 'who', 'with', 
-      'have', 'this', 'will', 'your', 'from', 'they', 'know', 'been', 'good', 
-      'some', 'time', 'very', 'like', 'make', 'were', 'is', 'it', 'be', 'to', 
-      'of', 'as', 'at', 'by', 'in', 'on', 'we', 'can', 'out', 'other', 'than',
-      'what', 'up', 'use', 'her', 'each', 'which', 'she', 'do', 'how', 'their',
-      'if', 'about', 'get', 'would', 'there', 'my', 'say', 'she', 'may', 'or'
-    ]);
-
+    // Remove duplicates and filter
     const uniqueWords = [...new Set(words.map(w => w.toLowerCase()))]
       .filter(word => 
-        !commonWords.has(word) && 
         word.length >= 3 &&
+        word.length <= 15 &&
         !this.translationCache.has(word)
       );
 
-    console.log(`WordWeave: Extracted ${uniqueWords.length} words from element:`, uniqueWords.slice(0, 5));
+    console.log(`WordWeave: Extracted ${uniqueWords.length} unique words from element`);
     return uniqueWords;
+  }
+
+  selectWordsForTranslation(words, rate, strategy) {
+    if (words.length === 0) return [];
+
+    // Calculate how many words to translate
+    const rateMultipliers = { 
+      minimal: 0.05, 
+      light: 0.15, 
+      moderate: 0.25, 
+      heavy: 0.4, 
+      intensive: 0.6 
+    };
+    
+    const multiplier = rateMultipliers[rate] || 0.25;
+    const targetCount = Math.max(1, Math.floor(words.length * multiplier));
+
+    let selectedWords = [];
+
+    switch (strategy) {
+      case 'common':
+        // Prioritize common words for easier learning
+        selectedWords = words
+          .filter(word => this.commonWords.has(word))
+          .sort(() => 0.5 - Math.random())
+          .slice(0, targetCount);
+        
+        // Fill remaining slots with other words if needed
+        if (selectedWords.length < targetCount) {
+          const remaining = words
+            .filter(word => !this.commonWords.has(word))
+            .sort(() => 0.5 - Math.random())
+            .slice(0, targetCount - selectedWords.length);
+          selectedWords = [...selectedWords, ...remaining];
+        }
+        break;
+
+      case 'uncommon':
+        // Prioritize uncommon words for advanced learning
+        selectedWords = words
+          .filter(word => !this.commonWords.has(word))
+          .sort(() => 0.5 - Math.random())
+          .slice(0, targetCount);
+        
+        // Fill remaining slots with common words if needed
+        if (selectedWords.length < targetCount) {
+          const remaining = words
+            .filter(word => this.commonWords.has(word))
+            .sort(() => 0.5 - Math.random())
+            .slice(0, targetCount - selectedWords.length);
+          selectedWords = [...selectedWords, ...remaining];
+        }
+        break;
+
+      case 'balanced':
+        // Mix of common and uncommon words
+        const commonCount = Math.floor(targetCount * 0.6);
+        const uncommonCount = targetCount - commonCount;
+        
+        const commonSelected = words
+          .filter(word => this.commonWords.has(word))
+          .sort(() => 0.5 - Math.random())
+          .slice(0, commonCount);
+        
+        const uncommonSelected = words
+          .filter(word => !this.commonWords.has(word))
+          .sort(() => 0.5 - Math.random())
+          .slice(0, uncommonCount);
+        
+        selectedWords = [...commonSelected, ...uncommonSelected];
+        
+        // Fill any remaining slots
+        if (selectedWords.length < targetCount) {
+          const remaining = words
+            .filter(word => !selectedWords.includes(word))
+            .sort(() => 0.5 - Math.random())
+            .slice(0, targetCount - selectedWords.length);
+          selectedWords = [...selectedWords, ...remaining];
+        }
+        break;
+
+      case 'random':
+      default:
+        // Random selection
+        selectedWords = words
+          .sort(() => 0.5 - Math.random())
+          .slice(0, targetCount);
+        break;
+    }
+
+    console.log(`WordWeave: Selected ${selectedWords.length} words using ${strategy} strategy:`, selectedWords.slice(0, 5));
+    return selectedWords;
   }
 
   async processPage() {
@@ -337,9 +439,6 @@ class Translator {
 
       console.log(`WordWeave: Processing ${containers.length} containers`);
 
-      const rateMultipliers = { low: 0.15, medium: 0.3, high: 0.5 };
-      const translationRate = rateMultipliers[this.state.translationRate] || 0.3;
-
       let processedCount = 0;
       let totalTranslations = 0;
 
@@ -353,10 +452,12 @@ class Translator {
           continue;
         }
 
-        // Select words to translate based on rate
-        const wordsToTranslate = words
-          .sort(() => 0.5 - Math.random()) // Shuffle
-          .slice(0, Math.max(1, Math.floor(words.length * translationRate)));
+        // Use improved word selection
+        const wordsToTranslate = this.selectWordsForTranslation(
+          words, 
+          this.state.translationRate, 
+          this.state.translationStrategy
+        );
           
         if (wordsToTranslate.length === 0) {
           processedCount++;
@@ -381,7 +482,7 @@ class Translator {
         
         // Small delay to prevent overwhelming the translation service
         if (i < containers.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 200));
+          await new Promise(resolve => setTimeout(resolve, 150));
         }
       }
 
@@ -431,7 +532,7 @@ class Translator {
       }
 
       // Small delay between individual word translations
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 80));
     }
 
     console.log(`WordWeave: Translated ${Object.keys(translations).length} out of ${words.length} words`);

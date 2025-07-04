@@ -24,9 +24,9 @@ function initializeUI(state) {
   document.getElementById('enableToggle').checked = state.enabled;
   
   // Initialize settings
-  document.getElementById('sourceLanguage').value = state.autoDetectLanguage ? 'auto' : (state.sourceLanguage || 'en');
   document.getElementById('targetLanguage').value = state.targetLanguage;
   document.getElementById('translationRate').value = state.translationRate;
+  document.getElementById('translationStrategy').value = state.translationStrategy || 'balanced';
   
   // Update settings section based on enabled status
   updateSettingsState(state.enabled);
@@ -41,24 +41,6 @@ function setupEventListeners() {
     updateStatus(enabled ? 'Extension enabled' : 'Extension disabled');
   });
   
-  // Source language changes
-  document.getElementById('sourceLanguage').addEventListener('change', async (e) => {
-    const value = e.target.value;
-    if (value === 'auto') {
-      await updateState({ 
-        autoDetectLanguage: true,
-        sourceLanguage: 'en' // fallback
-      });
-      updateStatus('Auto-detection enabled');
-    } else {
-      await updateState({ 
-        autoDetectLanguage: false,
-        sourceLanguage: value 
-      });
-      updateStatus('Source language updated');
-    }
-  });
-  
   // Target language changes
   document.getElementById('targetLanguage').addEventListener('change', async (e) => {
     await updateState({ targetLanguage: e.target.value });
@@ -68,7 +50,13 @@ function setupEventListeners() {
   // Translation rate changes
   document.getElementById('translationRate').addEventListener('change', async (e) => {
     await updateState({ translationRate: e.target.value });
-    updateStatus('Translation rate updated');
+    updateStatus('Translation intensity updated');
+  });
+
+  // Translation strategy changes
+  document.getElementById('translationStrategy').addEventListener('change', async (e) => {
+    await updateState({ translationStrategy: e.target.value });
+    updateStatus('Translation strategy updated');
   });
   
   // Action buttons

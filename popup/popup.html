@@ -19,31 +19,6 @@
 
     <div class="settings-section">
       <div class="setting-group">
-        <label for="sourceLanguage">Source Language:</label>
-        <select id="sourceLanguage">
-          <option value="auto">Auto-detect</option>
-          <option value="ar">Arabic (العربية)</option>
-          <option value="zh">Chinese (中文)</option>
-          <option value="nl">Dutch (Nederlands)</option>
-          <option value="en">English</option>
-          <option value="fr">French (Français)</option>
-          <option value="de">German (Deutsch)</option>
-          <option value="hi">Hindi (हिन्दी)</option>
-          <option value="id">Indonesian (Bahasa Indonesia)</option>
-          <option value="it">Italian (Italiano)</option>
-          <option value="ja">Japanese (日本語)</option>
-          <option value="ko">Korean (한국어)</option>
-          <option value="pl">Polish (Polski)</option>
-          <option value="pt">Portuguese (Português)</option>
-          <option value="ru">Russian (Русский)</option>
-          <option value="es">Spanish (Español)</option>
-          <option value="tr">Turkish (Türkçe)</option>
-          <option value="uk">Ukrainian (Українська)</option>
-          <option value="vi">Vietnamese (Tiếng Việt)</option>
-        </select>
-      </div>
-
-      <div class="setting-group">
         <label for="targetLanguage">Target Language:</label>
         <select id="targetLanguage">
           <option value="ar">Arabic (العربية)</option>
@@ -70,9 +45,21 @@
       <div class="setting-group">
         <label for="translationRate">Translation Intensity:</label>
         <select id="translationRate">
-          <option value="low">Light (10%)</option>
-          <option value="medium">Medium (25%)</option>
-          <option value="high">Intensive (40%)</option>
+          <option value="minimal">Minimal (5%)</option>
+          <option value="light">Light (15%)</option>
+          <option value="moderate">Moderate (25%)</option>
+          <option value="heavy">Heavy (40%)</option>
+          <option value="intensive">Intensive (60%)</option>
+        </select>
+      </div>
+
+      <div class="setting-group">
+        <label for="translationStrategy">Translation Strategy:</label>
+        <select id="translationStrategy">
+          <option value="balanced">Balanced Mix</option>
+          <option value="common">Focus on Common Words</option>
+          <option value="uncommon">Focus on Uncommon Words</option>
+          <option value="random">Random Selection</option>
         </select>
       </div>
     </div>

@@ -75,14 +75,25 @@
         </div>
 
         <div class="option-group">
-          <h3>Translation Intensity</h3>
-          <label for="translationRateOptions">Translation Rate:</label>
+          <h3>Translation Strategy</h3>
+          <label for="translationRateOptions">Translation Intensity:</label>
           <select id="translationRateOptions">
-            <option value="low">Light (10%)</option>
-            <option value="medium">Medium (25%)</option>
-            <option value="high">Intensive (40%)</option>
+            <option value="minimal">Minimal (5%)</option>
+            <option value="light">Light (15%)</option>
+            <option value="moderate">Moderate (25%)</option>
+            <option value="heavy">Heavy (40%)</option>
+            <option value="intensive">Intensive (60%)</option>
           </select>
           <p class="help-text">Controls what percentage of words on a page get translated.</p>
+
+          <label for="translationStrategyOptions">Word Selection Strategy:</label>
+          <select id="translationStrategyOptions">
+            <option value="balanced">Balanced Mix</option>
+            <option value="common">Focus on Common Words</option>
+            <option value="uncommon">Focus on Uncommon Words</option>
+            <option value="random">Random Selection</option>
+          </select>
+          <p class="help-text">Choose how words are selected for translation to optimize your learning experience.</p>
         </div>
         
         <div class="option-group">
