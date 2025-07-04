@@ -226,6 +226,7 @@ async function translateText(text, targetLang, sourceLang = null) {
   } catch (error) {
     console.error('WordWeave Background: Translation failed:', error);
     
+    // Try fallback service if primary fails
     if (state.translationService !== 'mymemory') {
       try {
         console.log('WordWeave Background: Trying fallback service...');
