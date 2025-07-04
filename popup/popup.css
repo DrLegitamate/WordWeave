@@ -100,11 +100,11 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(255, 255, 255, 0.2);
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 28px;
   box-shadow: 
-    inset 4px 4px 8px rgba(0, 0, 0, 0.1),
+    inset 4px 4px 8px rgba(238, 90, 82, 0.3),
     inset -4px -4px 8px rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
 }
@@ -127,7 +127,7 @@ body {
 }
 
 input:checked + .slider {
-  background: rgba(76, 175, 80, 0.3);
+  background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%);
   box-shadow: 
     inset 4px 4px 8px rgba(76, 175, 80, 0.2),
     inset -4px -4px 8px rgba(255, 255, 255, 0.1);
@@ -135,7 +135,7 @@ input:checked + .slider {
 
 input:checked + .slider:before {
   transform: translateX(28px);
-  background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
   box-shadow: 
     4px 4px 12px rgba(76, 175, 80, 0.3),
     -2px -2px 8px rgba(255, 255, 255, 0.7),
@@ -146,6 +146,7 @@ input:checked + .slider:before {
 .settings-section {
   padding: 24px 28px;
   background: linear-gradient(135deg, #e8f4f8 0%, #f0e6f7 100%);
+  transition: opacity 0.3s ease;
 }
 
 .setting-group {
@@ -202,6 +203,12 @@ select:hover {
     inset 4px 4px 8px rgba(174, 174, 192, 0.3),
     inset -4px -4px 8px rgba(255, 255, 255, 0.9),
     0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Disabled state for settings - only reduce opacity slightly */
+.settings-disabled {
+  opacity: 0.6;
+  pointer-events: none;
 }
 
 .actions {
@@ -290,15 +297,6 @@ button {
   to {
     transform: rotate(360deg);
   }
-}
-
-/* Disabled state */
-.disabled {
-  opacity: 0.6;
-}
-
-.disabled .settings-section {
-  pointer-events: none;
 }
 
 /* Smooth animations */

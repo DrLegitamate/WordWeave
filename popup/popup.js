@@ -28,8 +28,8 @@ function initializeUI(state) {
   document.getElementById('targetLanguage').value = state.targetLanguage;
   document.getElementById('translationRate').value = state.translationRate;
   
-  // Update UI state based on enabled status
-  updateUIState(state.enabled);
+  // Update settings section based on enabled status
+  updateSettingsState(state.enabled);
 }
 
 function setupEventListeners() {
@@ -37,7 +37,7 @@ function setupEventListeners() {
   document.getElementById('enableToggle').addEventListener('change', async (e) => {
     const enabled = e.target.checked;
     await updateState({ enabled });
-    updateUIState(enabled);
+    updateSettingsState(enabled);
     updateStatus(enabled ? 'Extension enabled' : 'Extension disabled');
   });
   
@@ -91,12 +91,12 @@ async function updateState(changes) {
   }
 }
 
-function updateUIState(enabled) {
-  const container = document.querySelector('.popup-container');
+function updateSettingsState(enabled) {
+  const settingsSection = document.querySelector('.settings-section');
   if (enabled) {
-    container.classList.remove('disabled');
+    settingsSection.classList.remove('settings-disabled');
   } else {
-    container.classList.add('disabled');
+    settingsSection.classList.add('settings-disabled');
   }
 }
 
