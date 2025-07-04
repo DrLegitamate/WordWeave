@@ -303,7 +303,7 @@ class Translator {
     }
 
     console.log(`WordWeave: Found ${containers.length} text containers`);
-    return containers.slice(0, 50); // Increased limit for better coverage
+    return containers.slice(0, 60); // Increased limit for better coverage
   }
 
   extractWordsFromElement(element) {
@@ -324,95 +324,51 @@ class Translator {
     return uniqueWords;
   }
 
-  selectWordsForTranslation(words, rate, strategy) {
+  selectWordsForTranslation(words, rate) {
     if (words.length === 0) return [];
 
-    // Calculate how many words to translate
+    // Improved translation intensity rates
     const rateMultipliers = { 
-      minimal: 0.05, 
-      light: 0.15, 
-      moderate: 0.25, 
-      heavy: 0.4, 
-      intensive: 0.6 
+      minimal: 0.03,   // 3% - very light touch
+      light: 0.08,     // 8% - gentle introduction
+      moderate: 0.15,  // 15% - balanced learning
+      medium: 0.25,    // 25% - standard intensity
+      heavy: 0.35,     // 35% - more intensive
+      intensive: 0.50  // 50% - maximum learning
     };
     
-    const multiplier = rateMultipliers[rate] || 0.25;
+    const multiplier = rateMultipliers[rate] || 0.15;
     const targetCount = Math.max(1, Math.floor(words.length * multiplier));
 
-    let selectedWords = [];
-
-    switch (strategy) {
-      case 'common':
-        // Prioritize common words for easier learning
-        selectedWords = words
-          .filter(word => this.commonWords.has(word))
-          .sort(() => 0.5 - Math.random())
-          .slice(0, targetCount);
-        
-        // Fill remaining slots with other words if needed
-        if (selectedWords.length < targetCount) {
-          const remaining = words
-            .filter(word => !this.commonWords.has(word))
-            .sort(() => 0.5 - Math.random())
-            .slice(0, targetCount - selectedWords.length);
-          selectedWords = [...selectedWords, ...remaining];
-        }
-        break;
-
-      case 'uncommon':
-        // Prioritize uncommon words for advanced learning
-        selectedWords = words
-          .filter(word => !this.commonWords.has(word))
-          .sort(() => 0.5 - Math.random())
-          .slice(0, targetCount);
-        
-        // Fill remaining slots with common words if needed
-        if (selectedWords.length < targetCount) {
-          const remaining = words
-            .filter(word => this.commonWords.has(word))
-            .sort(() => 0.5 - Math.random())
-            .slice(0, targetCount - selectedWords.length);
-          selectedWords = [...selectedWords, ...remaining];
-        }
-        break;
-
-      case 'balanced':
-        // Mix of common and uncommon words
-        const commonCount = Math.floor(targetCount * 0.6);
-        const uncommonCount = targetCount - commonCount;
-        
-        const commonSelected = words
-          .filter(word => this.commonWords.has(word))
-          .sort(() => 0.5 - Math.random())
-          .slice(0, commonCount);
-        
-        const uncommonSelected = words
-          .filter(word => !this.commonWords.has(word))
-          .sort(() => 0.5 - Math.random())
-          .slice(0, uncommonCount);
-        
-        selectedWords = [...commonSelected, ...uncommonSelected];
-        
-        // Fill any remaining slots
-        if (selectedWords.length < targetCount) {
-          const remaining = words
-            .filter(word => !selectedWords.includes(word))
-            .sort(() => 0.5 - Math.random())
-            .slice(0, targetCount - selectedWords.length);
-          selectedWords = [...selectedWords, ...remaining];
-        }
-        break;
-
-      case 'random':
-      default:
-        // Random selection
-        selectedWords = words
-          .sort(() => 0.5 - Math.random())
-          .slice(0, targetCount);
-        break;
+    // Intelligent word selection strategy
+    // Prioritize a mix of common and uncommon words for optimal learning
+    const commonWordsInText = words.filter(word => this.commonWords.has(word));
+    const uncommonWordsInText = words.filter(word => !this.commonWords.has(word));
+    
+    // Aim for 60% common words, 40% uncommon words for balanced learning
+    const commonTarget = Math.floor(targetCount * 0.6);
+    const uncommonTarget = targetCount - commonTarget;
+    
+    const selectedCommon = commonWordsInText
+      .sort(() => 0.5 - Math.random())
+      .slice(0, Math.min(commonTarget, commonWordsInText.length));
+    
+    const selectedUncommon = uncommonWordsInText
+      .sort(() => 0.5 - Math.random())
+      .slice(0, Math.min(uncommonTarget, uncommonWordsInText.length));
+    
+    let selectedWords = [...selectedCommon, ...selectedUncommon];
+    
+    // Fill remaining slots if needed
+    if (selectedWords.length < targetCount) {
+      const remaining = words
+        .filter(word => !selectedWords.includes(word))
+        .sort(() => 0.5 - Math.random())
+        .slice(0, targetCount - selectedWords.length);
+      selectedWords = [...selectedWords, ...remaining];
     }
 
-    console.log(`WordWeave: Selected ${selectedWords.length} words using ${strategy} strategy:`, selectedWords.slice(0, 5));
+    console.log(`WordWeave: Selected ${selectedWords.length} words (${rate} intensity):`, selectedWords.slice(0, 5));
     return selectedWords;
   }
 
@@ -453,11 +409,7 @@ class Translator {
         }
 
         // Use improved word selection
-        const wordsToTranslate = this.selectWordsForTranslation(
-          words, 
-          this.state.translationRate, 
-          this.state.translationStrategy
-        );
+        const wordsToTranslate = this.selectWordsForTranslation(words, this.state.translationRate);
           
         if (wordsToTranslate.length === 0) {
           processedCount++;
@@ -482,7 +434,7 @@ class Translator {
         
         // Small delay to prevent overwhelming the translation service
         if (i < containers.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 150));
+          await new Promise(resolve => setTimeout(resolve, 120));
         }
       }
 
@@ -532,7 +484,7 @@ class Translator {
       }
 
       // Small delay between individual word translations
-      await new Promise(resolve => setTimeout(resolve, 80));
+      await new Promise(resolve => setTimeout(resolve, 60));
     }
 
     console.log(`WordWeave: Translated ${Object.keys(translations).length} out of ${words.length} words`);

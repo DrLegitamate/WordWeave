@@ -24,7 +24,6 @@ function initializeUI() {
   document.getElementById('sourceLanguageOptions').value = currentState.autoDetectLanguage ? 'auto' : (currentState.sourceLanguage || 'en');
   document.getElementById('targetLanguageOptions').value = currentState.targetLanguage ?? 'es';
   document.getElementById('translationRateOptions').value = currentState.translationRate ?? 'moderate';
-  document.getElementById('translationStrategyOptions').value = currentState.translationStrategy ?? 'balanced';
   document.getElementById('translateHeaders').checked = currentState.translateHeaders ?? true;
   document.getElementById('translateNav').checked = currentState.translateNav ?? true;
   document.getElementById('showTooltips').checked = currentState.showTooltips ?? true;
@@ -76,11 +75,6 @@ function setupEventListeners() {
   // Translation rate changes
   document.getElementById('translationRateOptions').addEventListener('change', (e) => {
     updateState({ translationRate: e.target.value });
-  });
-
-  // Translation strategy changes
-  document.getElementById('translationStrategyOptions').addEventListener('change', (e) => {
-    updateState({ translationStrategy: e.target.value });
   });
   
   // Color picker synchronization
@@ -183,7 +177,6 @@ function gatherFormData() {
     sourceLanguage: sourceLanguageValue === 'auto' ? 'en' : sourceLanguageValue,
     targetLanguage: document.getElementById('targetLanguageOptions').value,
     translationRate: document.getElementById('translationRateOptions').value,
-    translationStrategy: document.getElementById('translationStrategyOptions').value,
     translateHeaders: document.getElementById('translateHeaders').checked,
     translateNav: document.getElementById('translateNav').checked,
     showTooltips: document.getElementById('showTooltips').checked,
@@ -234,7 +227,6 @@ async function resetAllSettings() {
     const defaults = {
       enabled: false,
       translationRate: 'moderate',
-      translationStrategy: 'balanced',
       targetLanguage: 'es',
       sourceLanguage: 'en',
       autoDetectLanguage: true,
@@ -265,7 +257,6 @@ async function resetToDefaults() {
   try {
     const defaults = {
       translationRate: 'moderate',
-      translationStrategy: 'balanced',
       targetLanguage: 'es',
       sourceLanguage: 'en',
       autoDetectLanguage: true,

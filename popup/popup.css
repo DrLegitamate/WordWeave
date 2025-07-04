@@ -205,12 +205,6 @@ select:hover {
     0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* Disabled state for settings - only reduce opacity slightly */
-.settings-disabled {
-  opacity: 0.6;
-  pointer-events: none;
-}
-
 .actions {
   display: flex;
   gap: 12px;

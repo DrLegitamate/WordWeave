@@ -23,13 +23,9 @@ function initializeUI(state) {
   // Initialize toggle
   document.getElementById('enableToggle').checked = state.enabled;
   
-  // Initialize settings
+  // Initialize settings - always enabled regardless of extension state
   document.getElementById('targetLanguage').value = state.targetLanguage;
   document.getElementById('translationRate').value = state.translationRate;
-  document.getElementById('translationStrategy').value = state.translationStrategy || 'balanced';
-  
-  // Update settings section based on enabled status
-  updateSettingsState(state.enabled);
 }
 
 function setupEventListeners() {
@@ -37,26 +33,19 @@ function setupEventListeners() {
   document.getElementById('enableToggle').addEventListener('change', async (e) => {
     const enabled = e.target.checked;
     await updateState({ enabled });
-    updateSettingsState(enabled);
     updateStatus(enabled ? 'Extension enabled' : 'Extension disabled');
   });
   
-  // Target language changes
+  // Target language changes - always enabled
   document.getElementById('targetLanguage').addEventListener('change', async (e) => {
     await updateState({ targetLanguage: e.target.value });
     updateStatus('Target language updated');
   });
   
-  // Translation rate changes
+  // Translation rate changes - always enabled
   document.getElementById('translationRate').addEventListener('change', async (e) => {
     await updateState({ translationRate: e.target.value });
     updateStatus('Translation intensity updated');
-  });
-
-  // Translation strategy changes
-  document.getElementById('translationStrategy').addEventListener('change', async (e) => {
-    await updateState({ translationStrategy: e.target.value });
-    updateStatus('Translation strategy updated');
   });
   
   // Action buttons
@@ -76,15 +65,6 @@ async function updateState(changes) {
   } catch (error) {
     console.error('Failed to update state:', error);
     updateStatus('Save failed');
-  }
-}
-
-function updateSettingsState(enabled) {
-  const settingsSection = document.querySelector('.settings-section');
-  if (enabled) {
-    settingsSection.classList.remove('settings-disabled');
-  } else {
-    settingsSection.classList.add('settings-disabled');
   }
 }
 
