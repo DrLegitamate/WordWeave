@@ -303,73 +303,58 @@ class Translator {
     }
 
     console.log(`WordWeave: Found ${containers.length} text containers`);
-    return containers.slice(0, 60); // Increased limit for better coverage
+    return containers.slice(0, 60);
   }
 
-  extractWordsFromElement(element) {
+  extractPhrasesFromElement(element) {
     const text = element.textContent || "";
-    const words = text.match(/\b[a-zA-Z\u00C0-\u017F\u0100-\u024F]{3,20}\b/g) || [];
     
-    if (words.length === 0) return [];
+    // Split text into sentences and phrases for better context
+    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 10);
+    const phrases = [];
     
-    // Remove duplicates and filter
-    const uniqueWords = [...new Set(words.map(w => w.toLowerCase()))]
-      .filter(word => 
-        word.length >= 3 &&
-        word.length <= 15 &&
-        !this.translationCache.has(word)
-      );
-
-    console.log(`WordWeave: Extracted ${uniqueWords.length} unique words from element`);
-    return uniqueWords;
+    sentences.forEach(sentence => {
+      const trimmed = sentence.trim();
+      if (trimmed.length > 20) {
+        // Split long sentences into smaller phrases at natural break points
+        const parts = trimmed.split(/[,;:]+|(?:\s+(?:and|or|but|however|therefore|meanwhile|furthermore)\s+)/i);
+        parts.forEach(part => {
+          const cleanPart = part.trim();
+          if (cleanPart.length > 10) {
+            phrases.push(cleanPart);
+          }
+        });
+      } else if (trimmed.length > 10) {
+        phrases.push(trimmed);
+      }
+    });
+    
+    console.log(`WordWeave: Extracted ${phrases.length} phrases from element`);
+    return phrases;
   }
 
-  selectWordsForTranslation(words, rate) {
-    if (words.length === 0) return [];
+  selectPhrasesForTranslation(phrases, rate) {
+    if (phrases.length === 0) return [];
 
-    // Improved translation intensity rates
     const rateMultipliers = { 
-      minimal: 0.03,   // 3% - very light touch
-      light: 0.08,     // 8% - gentle introduction
-      moderate: 0.15,  // 15% - balanced learning
-      medium: 0.25,    // 25% - standard intensity
-      heavy: 0.35,     // 35% - more intensive
-      intensive: 0.50  // 50% - maximum learning
+      minimal: 0.03,
+      light: 0.08,
+      moderate: 0.15,
+      medium: 0.25,
+      heavy: 0.35,
+      intensive: 0.50
     };
     
     const multiplier = rateMultipliers[rate] || 0.15;
-    const targetCount = Math.max(1, Math.floor(words.length * multiplier));
+    const targetCount = Math.max(1, Math.floor(phrases.length * multiplier));
 
-    // Intelligent word selection strategy
-    // Prioritize a mix of common and uncommon words for optimal learning
-    const commonWordsInText = words.filter(word => this.commonWords.has(word));
-    const uncommonWordsInText = words.filter(word => !this.commonWords.has(word));
-    
-    // Aim for 60% common words, 40% uncommon words for balanced learning
-    const commonTarget = Math.floor(targetCount * 0.6);
-    const uncommonTarget = targetCount - commonTarget;
-    
-    const selectedCommon = commonWordsInText
+    // Randomly select phrases for translation
+    const selectedPhrases = phrases
       .sort(() => 0.5 - Math.random())
-      .slice(0, Math.min(commonTarget, commonWordsInText.length));
-    
-    const selectedUncommon = uncommonWordsInText
-      .sort(() => 0.5 - Math.random())
-      .slice(0, Math.min(uncommonTarget, uncommonWordsInText.length));
-    
-    let selectedWords = [...selectedCommon, ...selectedUncommon];
-    
-    // Fill remaining slots if needed
-    if (selectedWords.length < targetCount) {
-      const remaining = words
-        .filter(word => !selectedWords.includes(word))
-        .sort(() => 0.5 - Math.random())
-        .slice(0, targetCount - selectedWords.length);
-      selectedWords = [...selectedWords, ...remaining];
-    }
+      .slice(0, targetCount);
 
-    console.log(`WordWeave: Selected ${selectedWords.length} words (${rate} intensity):`, selectedWords.slice(0, 5));
-    return selectedWords;
+    console.log(`WordWeave: Selected ${selectedPhrases.length} phrases for translation (${rate} intensity)`);
+    return selectedPhrases;
   }
 
   async processPage() {
@@ -402,24 +387,23 @@ class Translator {
         const element = containers[i];
         this.updateProgress(i, containers.length, `Processing text blocks...`);
         
-        const words = this.extractWordsFromElement(element);
-        if (words.length === 0) {
+        const phrases = this.extractPhrasesFromElement(element);
+        if (phrases.length === 0) {
           processedCount++;
           continue;
         }
 
-        // Use improved word selection
-        const wordsToTranslate = this.selectWordsForTranslation(words, this.state.translationRate);
+        const phrasesToTranslate = this.selectPhrasesForTranslation(phrases, this.state.translationRate);
           
-        if (wordsToTranslate.length === 0) {
+        if (phrasesToTranslate.length === 0) {
           processedCount++;
           continue;
         }
 
-        console.log(`WordWeave: Translating ${wordsToTranslate.length} words:`, wordsToTranslate);
+        console.log(`WordWeave: Translating ${phrasesToTranslate.length} phrases:`, phrasesToTranslate);
 
         try {
-          const translations = await this.translateWords(wordsToTranslate);
+          const translations = await this.translatePhrases(phrasesToTranslate);
           if (Object.keys(translations).length > 0) {
             this.applyTranslationsToElement(element, translations);
             this.processedElements.add(element);
@@ -427,19 +411,19 @@ class Translator {
             console.log(`WordWeave: Applied ${Object.keys(translations).length} translations to element`);
           }
         } catch (error) {
-          console.error('WordWeave: Error translating words for element:', error);
+          console.error('WordWeave: Error translating phrases for element:', error);
         }
 
         processedCount++;
         
         // Small delay to prevent overwhelming the translation service
         if (i < containers.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 120));
+          await new Promise(resolve => setTimeout(resolve, 150));
         }
       }
 
       console.log(`WordWeave: Processing complete. Applied ${totalTranslations} total translations.`);
-      this.updateProgress(100, 100, `Complete! ${totalTranslations} words translated`);
+      this.updateProgress(100, 100, `Complete! ${totalTranslations} phrases translated`);
       setTimeout(() => this.hideProgress(), 3000);
 
     } catch (error) {
@@ -451,43 +435,46 @@ class Translator {
     }
   }
   
-  async translateWords(words) {
+  async translatePhrases(phrases) {
     const translations = {};
     
-    for (const word of words) {
+    for (const phrase of phrases) {
+      // Create a cache key that includes context
+      const cacheKey = phrase.toLowerCase().trim();
+      
       // Check cache first
-      if (this.translationCache.has(word.toLowerCase())) {
-        translations[word] = this.translationCache.get(word.toLowerCase());
+      if (this.translationCache.has(cacheKey)) {
+        translations[phrase] = this.translationCache.get(cacheKey);
         continue;
       }
 
       try {
-        console.log(`WordWeave: Translating word: "${word}"`);
+        console.log(`WordWeave: Translating phrase: "${phrase}"`);
         
         const response = await browser.runtime.sendMessage({
           type: 'TRANSLATE_TEXT',
           payload: { 
-            text: word,
+            text: phrase,
             sourceLang: this.state.autoDetectLanguage ? null : this.state.sourceLanguage
           }
         });
 
-        if (response?.translation && response.translation.toLowerCase() !== word.toLowerCase()) {
-          translations[word] = response.translation;
-          this.translationCache.set(word.toLowerCase(), response.translation);
-          console.log(`WordWeave: Translated "${word}" -> "${response.translation}"`);
+        if (response?.translation && response.translation.toLowerCase() !== phrase.toLowerCase()) {
+          translations[phrase] = response.translation;
+          this.translationCache.set(cacheKey, response.translation);
+          console.log(`WordWeave: Translated "${phrase}" -> "${response.translation}"`);
         } else {
-          console.log(`WordWeave: No translation for "${word}" (same as original or empty)`);
+          console.log(`WordWeave: No translation for "${phrase}" (same as original or empty)`);
         }
       } catch (error) {
-        console.error(`WordWeave: Error translating word "${word}":`, error);
+        console.error(`WordWeave: Error translating phrase "${phrase}":`, error);
       }
 
-      // Small delay between individual word translations
-      await new Promise(resolve => setTimeout(resolve, 60));
+      // Delay between individual phrase translations
+      await new Promise(resolve => setTimeout(resolve, 80));
     }
 
-    console.log(`WordWeave: Translated ${Object.keys(translations).length} out of ${words.length} words`);
+    console.log(`WordWeave: Translated ${Object.keys(translations).length} out of ${phrases.length} phrases`);
     return translations;
   }
 
@@ -516,9 +503,9 @@ class Translator {
 
     if (textNodes.length === 0) return;
 
-    // Create regex for all words to translate
+    // Create regex for all phrases to translate (sorted by length, longest first)
     const sortedOriginals = Object.keys(translations).sort((a, b) => b.length - a.length);
-    const regex = new RegExp(`\\b(${sortedOriginals.map(this.escapeRegExp).join('|')})\\b`, 'gi');
+    const regex = new RegExp(`(${sortedOriginals.map(this.escapeRegExp).join('|')})`, 'gi');
 
     textNodes.forEach(textNode => {
       const textContent = textNode.textContent;
@@ -531,31 +518,33 @@ class Translator {
       const matches = [...textContent.matchAll(regex)];
       if (matches.length === 0) return;
 
-      console.log(`WordWeave: Found ${matches.length} matches in text node`);
+      console.log(`WordWeave: Found ${matches.length} phrase matches in text node`);
 
       const fragment = document.createDocumentFragment();
       let lastIndex = 0;
 
       matches.forEach(match => {
-        const originalWord = match[0];
-        const translatedWord = translations[originalWord] || translations[originalWord.toLowerCase()];
+        const originalPhrase = match[0];
+        const translatedPhrase = translations[originalPhrase] || 
+                                translations[Object.keys(translations).find(key => 
+                                  key.toLowerCase() === originalPhrase.toLowerCase())];
         
-        if (!translatedWord) return;
+        if (!translatedPhrase) return;
 
         // Add text before the match
         if (match.index > lastIndex) {
           fragment.appendChild(document.createTextNode(textContent.substring(lastIndex, match.index)));
         }
 
-        // Add the translated word in a span
+        // Add the translated phrase in a span
         const span = document.createElement('span');
         span.className = 'gt-word';
-        span.setAttribute('data-original', originalWord);
-        span.textContent = translatedWord;
+        span.setAttribute('data-original', originalPhrase);
+        span.textContent = translatedPhrase;
         span.style.setProperty('--gt-highlight-color', this.state.highlightColor || '#4a90e2');
         
         fragment.appendChild(span);
-        lastIndex = match.index + originalWord.length;
+        lastIndex = match.index + originalPhrase.length;
       });
 
       // Add any remaining text
@@ -566,7 +555,7 @@ class Translator {
       // Replace the text node
       try {
         parent.replaceChild(fragment, textNode);
-        console.log('WordWeave: Successfully replaced text node with translations');
+        console.log('WordWeave: Successfully replaced text node with phrase translations');
       } catch(e) {
         console.error("WordWeave: Failed to replace text node:", e);
       }
