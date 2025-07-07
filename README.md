@@ -1,196 +1,295 @@
-# WordWeave
+# WordWeave 🌍
 
-WordWeave is a powerful Firefox extension designed to help users understand foreign language content by intelligently translating a percentage of words on web pages. The extension provides an immersive translation experience that makes foreign content more accessible without completely replacing the original language.
+**Learn languages naturally while browsing with intelligent, context-aware translations**
 
-## 🌟 Features
+WordWeave is a powerful Firefox extension that revolutionizes language learning by providing **context-aware phrase translations** on any website. Unlike traditional word-by-word translators, WordWeave understands context and translates meaningful phrases, making foreign content accessible while preserving the natural learning experience.
 
-### Core Functionality
-- **Smart Translation**: Automatically translates a configurable percentage of words on web pages using LibreTranslate
-- **Contextual Learning**: See translations in context while preserving the original language structure
-- **Hover Tooltips**: View original words by hovering over translations
-- **Adjustable Intensity**: Control translation density (Light: 10%, Medium: 25%, Intensive: 40%)
+---
 
-### Translation Tools
-- **Context Menu Integration**: Translate selected text with right-click
-- **Real-time Processing**: Dynamic translation as new content loads
-- **Multiple Services**: LibreTranslate (default) and MyMemory fallback
-- **Language Detection**: Automatic source language detection
+## 🌟 Key Features
 
-### Customization
-- **18 Supported Languages**: Arabic, Chinese, Dutch, English, French, German, Hindi, Indonesian, Italian, Japanese, Korean, Polish, Portuguese, Russian, Spanish, Turkish, Ukrainian, Vietnamese
-- **Visual Customization**: Adjust highlight colors, font sizes, and appearance
-- **Content Control**: Choose what types of content to translate (headers, navigation, etc.)
-- **Site Management**: Exclude specific websites from translation
+### 🧠 **Context-Aware Translation**
+- **Phrase-Based Intelligence**: Translates complete phrases and sentences for accurate meaning
+- **Contextual Understanding**: "I can do this" vs "tin can" - always gets the right translation
+- **Natural Language Processing**: Preserves sentence structure and grammatical relationships
+- **Smart Phrase Selection**: Intelligently chooses meaningful phrases for optimal learning
 
-### Advanced Features
-- **Responsive Design**: Works seamlessly across desktop and mobile Firefox
-- **Privacy-Focused**: Uses privacy-respecting translation services
-- **Performance Optimized**: Efficient processing with minimal impact on page load times
-- **Neumorphism UI**: Beautiful, modern interface design
+### ⚡ **Intelligent Translation System**
+- **6 Intensity Levels**: From minimal (3%) to intensive (50%) phrase coverage
+- **Real-Time Processing**: Dynamic translation as new content loads
+- **Adaptive Learning**: Balances exposure with comprehension
+- **Privacy-First**: Uses LibreTranslate for secure, private translations
 
-## 🚀 Installation
+### 🎨 **Seamless User Experience**
+- **Hover Tooltips**: See original phrases by hovering over translations
+- **Context Menu**: Right-click any text for instant translation
+- **Visual Customization**: Adjust colors, fonts, and appearance
+- **Responsive Design**: Works perfectly on desktop and mobile Firefox
 
-### From Firefox Add-ons Store
-*Coming soon - extension is currently in development*
+### 🌐 **Comprehensive Language Support**
+**18 Languages Supported**: Arabic, Chinese, Dutch, English, French, German, Hindi, Indonesian, Italian, Japanese, Korean, Polish, Portuguese, Russian, Spanish, Turkish, Ukrainian, Vietnamese
 
-### Manual Installation (Development)
-1. Download or clone this repository
-2. Open Firefox and navigate to `about:debugging`
-3. Click "This Firefox" in the sidebar
-4. Click "Load Temporary Add-on"
-5. Select the `manifest.json` file from the downloaded repository
+---
 
-## 📖 How to Use
+## 🚀 Quick Start
 
-### Getting Started
-1. **Enable the Extension**: Click the WordWeave icon in your toolbar and toggle it on
-2. **Choose Your Languages**: Select source and target languages from the dropdown menus
-3. **Set Intensity**: Choose how many words you want translated (Light: 10%, Medium: 25%, Intensive: 40%)
-4. **Start Browsing**: Visit any website and watch as words get translated automatically
+### Installation
+1. **From Firefox Add-ons** *(Coming Soon)*
+2. **Manual Installation**: 
+   - Download from [GitHub](https://github.com/DrLegitamate/WordWeave)
+   - Load in Firefox via `about:debugging` → "Load Temporary Add-on"
 
-### Translation Features
-- **Hover for Originals**: Hover over translated words to see the original text
-- **Context Menu**: Right-click selected text to get instant translations
-- **Adjustable Rate**: Control the percentage of words that get translated
+### Setup in 30 Seconds
+1. **Enable WordWeave**: Click the toolbar icon and toggle ON
+2. **Choose Languages**: Select your target language (e.g., Spanish)
+3. **Set Intensity**: Choose how many phrases to translate
+4. **Start Learning**: Visit any website and see contextual translations!
 
-### Advanced Settings
-Access advanced settings by clicking "Advanced Settings" in the popup:
-- **Translation Settings**: Control what content gets translated and language preferences
-- **Appearance**: Customize colors, fonts, and visual style
-- **Sites**: Manage excluded websites
-- **Data**: Reset settings and manage extension data
+---
 
-## 🛠️ Technical Details
+## 🎯 How WordWeave Works
 
-### Architecture
-- **Background Script**: Manages state, handles translations, and coordinates between components
-- **Content Script**: Processes web pages and applies translations
-- **Popup Interface**: Quick access to settings and controls
-- **Options Page**: Comprehensive settings and customization
+### **The Context Revolution** 🧠
 
-### Translation Services
+Traditional translators fail because they translate words in isolation. WordWeave solves this with **phrase-based contextual translation**:
+
+| ❌ **Old Way (Word-by-Word)** | ✅ **WordWeave (Context-Aware)** |
+|-------------------------------|-----------------------------------|
+| "can" → "lata" (always tin can) | "I **can do this**" → "**Puedo hacer esto**" |
+| "bank" → "banco" (always financial) | "river **bank**" → "**orilla del río**" |
+| "light" → "luz" (always illumination) | "**light weight**" → "**peso ligero**" |
+
+### **Smart Phrase Selection** 📝
+
+WordWeave intelligently extracts and translates:
+- **Complete sentences** for full context
+- **Meaningful phrases** at natural break points
+- **Grammatically coherent** text segments
+- **Contextually appropriate** translations
+
+### **Intensity Levels** 📊
+
+Choose your learning pace:
+
+| Level | Coverage | Best For |
+|-------|----------|----------|
+| **Minimal** | 3% | Complete beginners, light exposure |
+| **Light** | 8% | Gentle introduction to new languages |
+| **Moderate** | 15% | Balanced learning experience |
+| **Medium** | 25% | Standard language learning |
+| **Heavy** | 35% | Intensive vocabulary building |
+| **Intensive** | 50% | Maximum exposure for advanced learners |
+
+---
+
+## 🛠️ Advanced Features
+
+### **Translation Services** 🔄
 - **Primary**: LibreTranslate (privacy-focused, open-source)
-- **Fallback**: MyMemory (backup service for reliability)
-- **Auto-detection**: Automatically detects source language when enabled
+- **Fallback**: MyMemory (reliability backup)
+- **Auto-Detection**: Automatically identifies source language
 
-### Privacy & Security
-- **No Data Collection**: Your browsing data stays on your device
-- **Open Source Translation**: Uses LibreTranslate for privacy
-- **Local Storage**: All settings stored locally
-- **Minimal Permissions**: Only requests necessary permissions
+### **Customization Options** 🎨
+- **Visual Styling**: Custom highlight colors and fonts
+- **Content Control**: Choose what to translate (headers, navigation, body text)
+- **Site Management**: Exclude specific websites
+- **Responsive Design**: Optimized for all screen sizes
 
-## 🎯 Translation Methodology
+### **Privacy & Security** 🔒
+- **No Data Collection**: Your browsing stays private
+- **Local Storage**: All settings stored on your device
+- **Open Source**: Full transparency and community-driven
+- **Minimal Permissions**: Only requests necessary access
 
-WordWeave uses intelligent translation principles:
+---
 
-### Contextual Translation
-Words are translated in their natural context, preserving the original language structure while making content more accessible.
+## 📖 Usage Guide
 
-### Percentage-Based Approach
-Instead of translating everything, WordWeave translates a configurable percentage of words, allowing users to:
-- Maintain exposure to the original language
-- Gradually increase comprehension
-- Customize difficulty level
+### **Basic Usage**
+1. **Browse Normally**: Visit any foreign language website
+2. **See Translations**: Translated phrases appear highlighted
+3. **Hover for Originals**: Mouse over to see original text
+4. **Right-Click Translate**: Select any text for instant translation
 
-### Smart Word Selection
-The extension intelligently selects words for translation based on:
-- Word frequency and importance
-- Content type (headers, body text, navigation)
-- User-defined translation intensity
+### **Advanced Settings**
+Access comprehensive settings via "Advanced Settings":
 
-## 🔧 Development
+#### **Translation Tab** 🌐
+- **Source/Target Languages**: Configure language pairs
+- **Translation Intensity**: Adjust phrase coverage
+- **Content Types**: Control what gets translated
+- **Service Provider**: Choose translation engine
 
-### Prerequisites
-- Firefox Developer Edition (recommended)
-- Node.js (for development tools)
-- Basic knowledge of WebExtensions API
+#### **Appearance Tab** 🎨
+- **Highlight Colors**: Customize visual appearance
+- **Font Sizes**: Adjust text display
+- **Preview**: See changes in real-time
 
-### Setup
-```bash
-git clone https://github.com/yourusername/wordweave
-cd wordweave
-npm install
+#### **Sites Tab** 🌍
+- **Excluded Sites**: Manage website blacklist
+- **Current Site**: Quick-add current domain
+
+---
+
+## 🔧 Technical Details
+
+### **Architecture**
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Background    │◄──►│  Content Script  │◄──►│   Popup/Options │
+│     Script      │    │   (Translator)   │    │      UI         │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+        │                        │                        │
+        ▼                        ▼                        ▼
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│  Translation    │    │   Page Content   │    │  User Settings  │
+│   Services      │    │   Processing     │    │   Management    │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
 ```
 
-### Testing
-1. Load the extension in Firefox using `about:debugging`
-2. Test on various websites with different content types
-3. Verify translation services are working
-4. Check responsive design on different screen sizes
+### **Translation Pipeline**
+1. **Content Detection**: Identify translatable text containers
+2. **Phrase Extraction**: Split content into meaningful phrases
+3. **Context Analysis**: Maintain grammatical relationships
+4. **Smart Selection**: Choose phrases based on intensity setting
+5. **Batch Translation**: Send phrases to translation service
+6. **Contextual Application**: Replace original with translated phrases
+7. **Visual Enhancement**: Apply styling and hover tooltips
+
+### **Performance Optimizations**
+- **Intelligent Caching**: Avoid redundant translations
+- **Batch Processing**: Efficient API usage
+- **Debounced Updates**: Smooth handling of dynamic content
+- **Memory Management**: Prevent memory leaks with WeakSet usage
+
+---
+
+## 🌍 Supported Languages
+
+<details>
+<summary><strong>Click to see all 18 supported languages</strong></summary>
+
+| Language | Code | Native Name | Script |
+|----------|------|-------------|--------|
+| Arabic | `ar` | العربية | Right-to-left |
+| Chinese | `zh` | 中文 | Logographic |
+| Dutch | `nl` | Nederlands | Latin |
+| English | `en` | English | Latin |
+| French | `fr` | Français | Latin |
+| German | `de` | Deutsch | Latin |
+| Hindi | `hi` | हिन्दी | Devanagari |
+| Indonesian | `id` | Bahasa Indonesia | Latin |
+| Italian | `it` | Italiano | Latin |
+| Japanese | `ja` | 日本語 | Mixed scripts |
+| Korean | `ko` | 한국어 | Hangul |
+| Polish | `pl` | Polski | Latin |
+| Portuguese | `pt` | Português | Latin |
+| Russian | `ru` | Русский | Cyrillic |
+| Spanish | `es` | Español | Latin |
+| Turkish | `tr` | Türkçe | Latin |
+| Ukrainian | `uk` | Українська | Cyrillic |
+| Vietnamese | `vi` | Tiếng Việt | Latin with diacritics |
+
+</details>
+
+---
 
 ## 🤝 Contributing
 
-We welcome contributions! Here's how you can help:
+We welcome contributions from the community! Here's how you can help:
 
-### Bug Reports
-- Use the GitHub issue tracker
+### **Bug Reports** 🐛
+- Use [GitHub Issues](https://github.com/DrLegitamate/WordWeave/issues)
 - Include Firefox version and extension version
-- Provide steps to reproduce the issue
-- Include screenshots if relevant
+- Provide reproduction steps and screenshots
 
-### Feature Requests
+### **Feature Requests** 💡
 - Check existing issues first
 - Describe the feature and its benefits
 - Consider implementation complexity
 
-### Code Contributions
+### **Code Contributions** 👨‍💻
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Make your changes with tests
+4. Submit a pull request with detailed description
 
-## 📊 Supported Languages
-
-| Language | Code | Native Name |
-|----------|------|-------------|
-| Arabic | ar | العربية |
-| Chinese | zh | 中文 |
-| Dutch | nl | Nederlands |
-| English | en | English |
-| French | fr | Français |
-| German | de | Deutsch |
-| Hindi | hi | हिन्दी |
-| Indonesian | id | Bahasa Indonesia |
-| Italian | it | Italiano |
-| Japanese | ja | 日本語 |
-| Korean | ko | 한국어 |
-| Polish | pl | Polski |
-| Portuguese | pt | Português |
-| Russian | ru | Русский |
-| Spanish | es | Español |
-| Turkish | tr | Türkçe |
-| Ukrainian | uk | Українська |
-| Vietnamese | vi | Tiếng Việt |
-
-## 🔒 Privacy Policy
-
-WordWeave is committed to protecting your privacy:
-
-- **No Personal Data Collection**: We don't collect, store, or transmit personal information
-- **Local Storage Only**: All your settings stay on your device
-- **Translation Services**: Text is sent to translation services only for processing
-- **No Tracking**: No analytics, tracking, or user behavior monitoring
-- **Open Source**: Full transparency through open source code
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- **LibreTranslate**: For providing privacy-focused translation services
-- **Firefox WebExtensions**: For the robust extension platform
-- **Open Source Community**: For feedback and contributions
-
-## 📞 Support
-
-- **GitHub Issues**: For bug reports and feature requests
-- **Documentation**: Check the wiki for detailed guides
-- **Community**: Join discussions in the issues section
+### **Translation Improvements** 🌐
+- Help improve language support
+- Test translations in your native language
+- Report context-specific translation issues
 
 ---
 
-**Make foreign content accessible with WordWeave!** 🌍🔗
+## 📊 Comparison
 
-*Translate intelligently, browse naturally, understand progressively.*
+| Feature | WordWeave | Traditional Translators |
+|---------|-----------|------------------------|
+| **Context Awareness** | ✅ Phrase-based | ❌ Word-by-word |
+| **Learning Focus** | ✅ Gradual exposure | ❌ Complete replacement |
+| **Privacy** | ✅ No data collection | ❌ Often tracks users |
+| **Customization** | ✅ Highly configurable | ❌ Limited options |
+| **Performance** | ✅ Optimized for browsing | ❌ Often slow/intrusive |
+| **Open Source** | ✅ Fully transparent | ❌ Proprietary |
+
+---
+
+## 🔒 Privacy Policy
+
+**Your privacy is our priority:**
+
+- **Zero Data Collection**: We don't collect, store, or transmit personal information
+- **Local Storage Only**: All settings remain on your device
+- **Translation Privacy**: Text sent only for processing, not stored
+- **No Tracking**: No analytics, cookies, or user behavior monitoring
+- **Open Source**: Complete transparency through public code
+
+---
+
+## 📞 Support & Community
+
+### **Get Help**
+- **Documentation**: Check our [Wiki](https://github.com/DrLegitamate/WordWeave/wiki)
+- **Issues**: Report bugs on [GitHub](https://github.com/DrLegitamate/WordWeave/issues)
+- **Discussions**: Join community conversations
+
+### **Stay Updated**
+- **GitHub**: Star and watch the repository
+- **Releases**: Get notified of new versions
+- **Changelog**: Track feature updates and improvements
+
+---
+
+## 🙏 Acknowledgments
+
+- **LibreTranslate**: Privacy-focused translation services
+- **Firefox WebExtensions**: Robust extension platform
+- **Open Source Community**: Invaluable feedback and contributions
+- **Language Learners**: Inspiration and real-world testing
+
+---
+
+## 📄 License
+
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🚀 Get Started Today!
+
+**Transform your browsing into a language learning adventure!**
+
+1. **[Download WordWeave](https://github.com/DrLegitamate/WordWeave)** 📥
+2. **Choose your target language** 🌐
+3. **Start learning naturally** 🧠
+4. **Browse the web with confidence** ✨
+
+---
+
+<div align="center">
+
+**WordWeave** - *Translate intelligently, browse naturally, learn contextually* 🌍🔗
+
+[⭐ Star on GitHub](https://github.com/DrLegitamate/WordWeave) | [🐛 Report Issues](https://github.com/DrLegitamate/WordWeave/issues) | [💡 Request Features](https://github.com/DrLegitamate/WordWeave/issues/new)
+
+</div>
