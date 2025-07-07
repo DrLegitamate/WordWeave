@@ -2,29 +2,29 @@
 
 **Learn languages naturally while browsing with intelligent, context-aware translations**
 
-WordWeave is a powerful Firefox extension that revolutionizes language learning by providing **context-aware phrase translations** on any website. Unlike traditional word-by-word translators, WordWeave understands context and translates meaningful phrases, making foreign content accessible while preserving the natural learning experience.
+WordWeave is a powerful Firefox extension that revolutionizes language learning by providing **smart word and phrase translations** on any website. Unlike traditional translators that replace entire content, WordWeave selectively translates individual words and meaningful phrases, preserving the natural reading experience while providing contextual learning opportunities.
 
 ---
 
 ## 🌟 Key Features
 
-### 🧠 **Context-Aware Translation**
-- **Phrase-Based Intelligence**: Translates complete phrases and sentences for accurate meaning
-- **Contextual Understanding**: "I can do this" vs "tin can" - always gets the right translation
-- **Natural Language Processing**: Preserves sentence structure and grammatical relationships
-- **Smart Phrase Selection**: Intelligently chooses meaningful phrases for optimal learning
+### 🧠 **Smart Word Selection**
+- **Intelligent Filtering**: Skips common words you already know
+- **Context-Aware**: Translates "can" correctly based on context ("tin can" vs "you can do this")
+- **Meaningful Phrases**: Includes short phrases (2-4 words) for better context
+- **Adaptive Learning**: Focuses on vocabulary that matters for your level
 
-### ⚡ **Intelligent Translation System**
-- **6 Intensity Levels**: From minimal (3%) to intensive (50%) phrase coverage
+### ⚡ **Precision Translation System**
+- **6 Intensity Levels**: From minimal (3%) to intensive (50%) word coverage
+- **Word-Level Accuracy**: Only translated words are highlighted, not entire blocks
 - **Real-Time Processing**: Dynamic translation as new content loads
-- **Adaptive Learning**: Balances exposure with comprehension
 - **Privacy-First**: Uses LibreTranslate for secure, private translations
 
 ### 🎨 **Seamless User Experience**
-- **Hover Tooltips**: See original phrases by hovering over translations
+- **Hover Tooltips**: See original words by hovering over translations
 - **Context Menu**: Right-click any text for instant translation
 - **Visual Customization**: Adjust colors, fonts, and appearance
-- **Responsive Design**: Works perfectly on desktop and mobile Firefox
+- **Clean Interface**: Only translated content is visually distinct
 
 ### 🌐 **Comprehensive Language Support**
 **18 Languages Supported**: Arabic, Chinese, Dutch, English, French, German, Hindi, Indonesian, Italian, Japanese, Korean, Polish, Portuguese, Russian, Spanish, Turkish, Ukrainian, Vietnamese
@@ -42,43 +42,45 @@ WordWeave is a powerful Firefox extension that revolutionizes language learning 
 ### Setup in 30 Seconds
 1. **Enable WordWeave**: Click the toolbar icon and toggle ON
 2. **Choose Languages**: Select your target language (e.g., Spanish)
-3. **Set Intensity**: Choose how many phrases to translate
-4. **Start Learning**: Visit any website and see contextual translations!
+3. **Set Intensity**: Choose how many words to translate
+4. **Start Learning**: Visit any website and see individual word translations!
 
 ---
 
 ## 🎯 How WordWeave Works
 
-### **The Context Revolution** 🧠
+### **The Smart Translation Difference** 🧠
 
-Traditional translators fail because they translate words in isolation. WordWeave solves this with **phrase-based contextual translation**:
+WordWeave solves the context problem that plagues traditional translators:
 
-| ❌ **Old Way (Word-by-Word)** | ✅ **WordWeave (Context-Aware)** |
-|-------------------------------|-----------------------------------|
-| "can" → "lata" (always tin can) | "I **can do this**" → "**Puedo hacer esto**" |
-| "bank" → "banco" (always financial) | "river **bank**" → "**orilla del río**" |
-| "light" → "luz" (always illumination) | "**light weight**" → "**peso ligero**" |
+| ❌ **Traditional Problem** | ✅ **WordWeave Solution** |
+|---------------------------|---------------------------|
+| "can" → always "lata" (tin can) | **Context-aware**: "I **can** do this" → "**puedo**" |
+| "bank" → always "banco" (financial) | **Smart detection**: "river **bank**" → "**orilla**" |
+| Entire sentences replaced | **Selective**: Only specific **words** highlighted |
+| Overwhelming text blocks | **Clean**: Original text preserved with targeted learning |
 
-### **Smart Phrase Selection** 📝
+### **Intelligent Word Selection** 📝
 
-WordWeave intelligently extracts and translates:
-- **Complete sentences** for full context
-- **Meaningful phrases** at natural break points
-- **Grammatically coherent** text segments
-- **Contextually appropriate** translations
+WordWeave carefully chooses what to translate:
 
-### **Intensity Levels** 📊
+1. **Filters out common words** you likely already know
+2. **Prioritizes meaningful vocabulary** for learning
+3. **Includes contextual phrases** when needed for clarity
+4. **Maintains reading flow** with selective highlighting
+
+### **Translation Intensity Levels** 📊
 
 Choose your learning pace:
 
-| Level | Coverage | Best For |
-|-------|----------|----------|
-| **Minimal** | 3% | Complete beginners, light exposure |
-| **Light** | 8% | Gentle introduction to new languages |
-| **Moderate** | 15% | Balanced learning experience |
-| **Medium** | 25% | Standard language learning |
-| **Heavy** | 35% | Intensive vocabulary building |
-| **Intensive** | 50% | Maximum exposure for advanced learners |
+| Level | Coverage | Best For | What You See |
+|-------|----------|----------|--------------|
+| **Minimal** | 3% | Complete beginners | Few key words translated |
+| **Light** | 8% | Gentle introduction | Light vocabulary exposure |
+| **Moderate** | 15% | Balanced learning | Comfortable word density |
+| **Medium** | 25% | Standard learning | Regular vocabulary building |
+| **Heavy** | 35% | Intensive study | High word exposure |
+| **Intensive** | 50% | Advanced learners | Maximum vocabulary challenge |
 
 ---
 
@@ -93,7 +95,7 @@ Choose your learning pace:
 - **Visual Styling**: Custom highlight colors and fonts
 - **Content Control**: Choose what to translate (headers, navigation, body text)
 - **Site Management**: Exclude specific websites
-- **Responsive Design**: Optimized for all screen sizes
+- **Word Filtering**: Smart common word detection
 
 ### **Privacy & Security** 🔒
 - **No Data Collection**: Your browsing stays private
@@ -107,16 +109,22 @@ Choose your learning pace:
 
 ### **Basic Usage**
 1. **Browse Normally**: Visit any foreign language website
-2. **See Translations**: Translated phrases appear highlighted
-3. **Hover for Originals**: Mouse over to see original text
+2. **See Translations**: Individual translated words appear highlighted
+3. **Hover for Originals**: Mouse over to see original words
 4. **Right-Click Translate**: Select any text for instant translation
+
+### **What You'll See**
+- **Original text**: "I need to **depositar** money at the **banco**"
+- **Clean highlighting**: Only translated words stand out
+- **Preserved context**: Sentence structure remains natural
+- **Hover tooltips**: See "deposit" and "bank" on hover
 
 ### **Advanced Settings**
 Access comprehensive settings via "Advanced Settings":
 
 #### **Translation Tab** 🌐
 - **Source/Target Languages**: Configure language pairs
-- **Translation Intensity**: Adjust phrase coverage
+- **Translation Intensity**: Adjust word coverage percentage
 - **Content Types**: Control what gets translated
 - **Service Provider**: Choose translation engine
 
@@ -142,25 +150,26 @@ Access comprehensive settings via "Advanced Settings":
         │                        │                        │
         ▼                        ▼                        ▼
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│  Translation    │    │   Page Content   │    │  User Settings  │
+│  Translation    │    │   Word-Level     │    │  User Settings  │
 │   Services      │    │   Processing     │    │   Management    │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
 ```
 
 ### **Translation Pipeline**
 1. **Content Detection**: Identify translatable text containers
-2. **Phrase Extraction**: Split content into meaningful phrases
-3. **Context Analysis**: Maintain grammatical relationships
-4. **Smart Selection**: Choose phrases based on intensity setting
-5. **Batch Translation**: Send phrases to translation service
-6. **Contextual Application**: Replace original with translated phrases
-7. **Visual Enhancement**: Apply styling and hover tooltips
+2. **Word Extraction**: Extract individual words and short phrases
+3. **Smart Filtering**: Remove common words using frequency lists
+4. **Context Analysis**: Maintain word relationships and meaning
+5. **Selective Translation**: Translate only chosen vocabulary
+6. **Precise Application**: Replace only specific words, not entire blocks
+7. **Visual Enhancement**: Apply styling only to translated words
 
 ### **Performance Optimizations**
 - **Intelligent Caching**: Avoid redundant translations
 - **Batch Processing**: Efficient API usage
 - **Debounced Updates**: Smooth handling of dynamic content
 - **Memory Management**: Prevent memory leaks with WeakSet usage
+- **Word-Level Precision**: Minimal DOM manipulation
 
 ---
 
@@ -225,8 +234,10 @@ We welcome contributions from the community! Here's how you can help:
 
 | Feature | WordWeave | Traditional Translators |
 |---------|-----------|------------------------|
-| **Context Awareness** | ✅ Phrase-based | ❌ Word-by-word |
-| **Learning Focus** | ✅ Gradual exposure | ❌ Complete replacement |
+| **Translation Precision** | ✅ Word-level accuracy | ❌ Block-level replacement |
+| **Context Awareness** | ✅ Smart word selection | ❌ Word-by-word only |
+| **Learning Focus** | ✅ Selective vocabulary | ❌ Complete replacement |
+| **Reading Experience** | ✅ Preserved flow | ❌ Disrupted layout |
 | **Privacy** | ✅ No data collection | ❌ Often tracks users |
 | **Customization** | ✅ Highly configurable | ❌ Limited options |
 | **Performance** | ✅ Optimized for browsing | ❌ Often slow/intrusive |
@@ -288,7 +299,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 <div align="center">
 
-**WordWeave** - *Translate intelligently, browse naturally, learn contextually* 🌍🔗
+**WordWeave** - *Translate precisely, browse naturally, learn effectively* 🌍🔗
 
 [⭐ Star on GitHub](https://github.com/DrLegitamate/WordWeave) | [🐛 Report Issues](https://github.com/DrLegitamate/WordWeave/issues) | [💡 Request Features](https://github.com/DrLegitamate/WordWeave/issues/new)
 
