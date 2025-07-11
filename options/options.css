@@ -201,17 +201,18 @@ body {
 
 .section-header h2 {
   color: #1e293b;
-  font-size: 28px;
+  font-size: 32px;
   margin: 0 0 8px;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: -0.5px;
 }
 
 .section-description {
   color: #64748b;
-  font-size: 16px;
+  font-size: 18px;
   margin: 0;
   line-height: 1.6;
+  font-weight: 500;
 }
 
 .option-group {
@@ -244,17 +245,18 @@ body {
 
 .option-group h3 {
   color: #1e293b;
-  font-size: 20px;
+  font-size: 22px;
   margin: 0;
-  font-weight: 700;
+  font-weight: 800;
   flex: 1;
 }
 
 .group-description {
   color: #64748b;
-  font-size: 14px;
+  font-size: 16px;
   margin: 0 0 24px;
-  line-height: 1.5;
+  line-height: 1.6;
+  font-weight: 500;
 }
 
 .form-row {
@@ -277,10 +279,10 @@ label {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
+  font-size: 16px;
   color: #374151;
   margin-bottom: 8px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 label svg {
@@ -294,11 +296,11 @@ select, textarea, input[type="text"] {
   padding: 12px 16px;
   border: 2px solid #e5e7eb;
   border-radius: 12px;
-  font-size: 14px;
+  font-size: 16px;
   background: #ffffff;
   color: #374151;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  font-weight: 500;
+  font-weight: 600;
   font-family: inherit;
 }
 
@@ -338,8 +340,8 @@ textarea {
   display: flex;
   align-items: center;
   cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 16px;
+  font-weight: 600;
   color: #374151;
   padding: 12px 16px;
   border-radius: 12px;
@@ -406,10 +408,11 @@ input[type="color"]:hover {
 }
 
 .help-text {
-  font-size: 12px;
+  font-size: 14px;
   color: #6b7280;
   margin-top: 8px;
   line-height: 1.4;
+  font-weight: 500;
 }
 
 .help-text.danger {
@@ -425,9 +428,10 @@ input[type="color"]:hover {
 }
 
 .preview-text {
-  font-size: 16px;
+  font-size: 18px;
   line-height: 1.6;
   color: #374151;
+  font-weight: 500;
 }
 
 .preview-word {
@@ -464,8 +468,9 @@ input[type="color"]:hover {
 
 .site-url {
   font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
-  font-size: 13px;
+  font-size: 14px;
   color: #374151;
+  font-weight: 600;
 }
 
 .remove-site {
@@ -500,8 +505,8 @@ button {
   padding: 12px 24px;
   border: none;
   border-radius: 12px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   letter-spacing: -0.1px;
@@ -553,8 +558,8 @@ button {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 16px;
+  font-weight: 600;
   color: #059669;
 }
 
@@ -728,9 +733,17 @@ button {
     border-color: #64748b;
   }
   
+  .preview-text {
+    color: #f1f5f9;
+  }
+  
   .site-item {
     background: #475569;
     border-color: #64748b;
+  }
+  
+  .site-url {
+    color: #f1f5f9;
   }
   
   .options-footer {
@@ -747,5 +760,13 @@ button {
   .secondary-btn:hover {
     border-color: #6366f1;
     color: #6366f1;
+  }
+  
+  .help-text {
+    color: #94a3b8;
+  }
+  
+  label {
+    color: #e2e8f0;
   }
 }
