@@ -200,19 +200,19 @@ body {
 }
 
 .section-header h2 {
-  color: #1e293b;
+  color: #0f172a;
   font-size: 32px;
   margin: 0 0 8px;
-  font-weight: 800;
+  font-weight: 900;
   letter-spacing: -0.5px;
 }
 
 .section-description {
-  color: #64748b;
+  color: #475569;
   font-size: 18px;
   margin: 0;
   line-height: 1.6;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .option-group {
@@ -244,19 +244,19 @@ body {
 }
 
 .option-group h3 {
-  color: #1e293b;
+  color: #0f172a;
   font-size: 22px;
   margin: 0;
-  font-weight: 800;
+  font-weight: 900;
   flex: 1;
 }
 
 .group-description {
-  color: #64748b;
+  color: #475569;
   font-size: 16px;
   margin: 0 0 24px;
   line-height: 1.6;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .form-row {
@@ -280,9 +280,9 @@ label {
   align-items: center;
   gap: 8px;
   font-size: 16px;
-  color: #374151;
+  color: #1e293b;
   margin-bottom: 8px;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 label svg {
@@ -298,9 +298,9 @@ select, textarea, input[type="text"] {
   border-radius: 12px;
   font-size: 16px;
   background: #ffffff;
-  color: #374151;
+  color: #1e293b;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  font-weight: 600;
+  font-weight: 700;
   font-family: inherit;
 }
 
@@ -341,8 +341,8 @@ textarea {
   align-items: center;
   cursor: pointer;
   font-size: 16px;
-  font-weight: 600;
-  color: #374151;
+  font-weight: 700;
+  color: #1e293b;
   padding: 12px 16px;
   border-radius: 12px;
   transition: all 0.2s ease;
@@ -409,10 +409,10 @@ input[type="color"]:hover {
 
 .help-text {
   font-size: 14px;
-  color: #6b7280;
+  color: #64748b;
   margin-top: 8px;
   line-height: 1.4;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .help-text.danger {
@@ -430,8 +430,8 @@ input[type="color"]:hover {
 .preview-text {
   font-size: 18px;
   line-height: 1.6;
-  color: #374151;
-  font-weight: 500;
+  color: #1e293b;
+  font-weight: 600;
 }
 
 .preview-word {
@@ -469,8 +469,8 @@ input[type="color"]:hover {
 .site-url {
   font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
   font-size: 14px;
-  color: #374151;
-  font-weight: 600;
+  color: #1e293b;
+  font-weight: 700;
 }
 
 .remove-site {
