@@ -1,5 +1,5 @@
 :root {
-  --gt-highlight-color: #4a90e2;
+  --gt-highlight-color: #6366f1;
   --gt-font-size: 1em;
 }
 
@@ -10,15 +10,19 @@
   text-decoration: none;
   border-bottom: 1px dotted var(--gt-highlight-color);
   font-size: var(--gt-font-size);
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   display: inline;
+  border-radius: 3px;
+  padding: 1px 2px;
+  margin: -1px -2px;
 }
 
 .gt-word:hover {
-  color: #2c5aa0;
-  background-color: rgba(74, 144, 226, 0.1);
-  border-radius: 2px;
-  padding: 1px 2px;
+  color: #4f46e5;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+  border-bottom-color: #4f46e5;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
 }
 
 .gt-word:hover::after {
@@ -27,21 +31,26 @@
   bottom: 100%;
   left: 50%;
   transform: translateX(-50%);
-  padding: 6px 10px;
-  background-color: #333;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
   color: white;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 13px;
   white-space: nowrap;
   z-index: 10000;
   margin-bottom: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 
+    0 10px 25px rgba(0, 0, 0, 0.2),
+    0 4px 10px rgba(0, 0, 0, 0.1);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-weight: normal;
+  font-weight: 500;
   line-height: 1.2;
   max-width: 200px;
   word-wrap: break-word;
   white-space: normal;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  animation: tooltipFadeIn 0.2s ease;
 }
 
 .gt-word:hover::before {
@@ -50,22 +59,27 @@
   bottom: 100%;
   left: 50%;
   transform: translateX(-50%);
-  border: 5px solid transparent;
-  border-top-color: #333;
-  margin-bottom: 3px;
+  border: 6px solid transparent;
+  border-top-color: #1f2937;
+  margin-bottom: 2px;
   z-index: 10000;
+  animation: tooltipFadeIn 0.2s ease;
 }
 
 /* Translation Popup */
 .gt-popup {
   position: absolute;
   z-index: 10001;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  max-width: 300px;
-  animation: gtFadeIn 0.2s ease;
+  max-width: 320px;
+  animation: popupSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  overflow: hidden;
 }
 
 .gt-popup-content {
@@ -76,58 +90,86 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
-  border-bottom: 1px solid #eee;
-  background: #f8f9fa;
-  border-radius: 8px 8px 0 0;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .gt-popup-title {
-  font-weight: 600;
-  color: #333;
+  font-weight: 700;
+  color: #1e293b;
   font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gt-popup-title::before {
+  content: '🌐';
+  font-size: 16px;
 }
 
 .gt-popup-close {
   background: none;
   border: none;
-  font-size: 18px;
+  font-size: 20px;
   cursor: pointer;
-  color: #666;
-  padding: 0;
-  width: 20px;
-  height: 20px;
+  color: #64748b;
+  padding: 4px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s ease;
 }
 
 .gt-popup-close:hover {
-  color: #333;
+  color: #1e293b;
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .gt-popup-body {
-  padding: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.gt-translation-pair {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
 }
 
 .gt-original {
-  font-weight: 500;
-  color: #333;
+  font-weight: 600;
+  color: #374151;
   flex: 1;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  font-size: 14px;
 }
 
 .gt-arrow {
   color: var(--gt-highlight-color);
   font-weight: bold;
+  font-size: 18px;
+  opacity: 0.7;
 }
 
 .gt-translation {
   color: var(--gt-highlight-color);
-  font-weight: 500;
+  font-weight: 600;
   flex: 1;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+  border-radius: 8px;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  font-size: 14px;
 }
 
 /* Progress Bar */
@@ -137,40 +179,48 @@
   left: 0;
   right: 0;
   z-index: 10003;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
   color: white;
-  padding: 8px 16px;
+  padding: 12px 20px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 12px;
-  font-weight: 500;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
   transform: translateY(-100%);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
+  backdrop-filter: blur(10px);
 }
 
 .gt-progress-container.gt-progress-show {
   transform: translateY(0);
 }
 
+.gt-progress-icon {
+  width: 20px;
+  height: 20px;
+  animation: progressSpin 2s linear infinite;
+}
+
 .gt-progress-bar {
   flex: 1;
-  height: 4px;
+  height: 6px;
   background: rgba(255, 255, 255, 0.2);
-  border-radius: 2px;
+  border-radius: 3px;
   overflow: hidden;
   position: relative;
 }
 
 .gt-progress-fill {
   height: 100%;
-  background: rgba(255, 255, 255, 0.8);
-  border-radius: 2px;
-  transition: width 0.3s ease;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 1) 100%);
+  border-radius: 3px;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   width: 0%;
   position: relative;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
 }
 
 .gt-progress-fill::after {
@@ -180,14 +230,15 @@
   left: 0;
   right: 0;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  animation: gtProgressShimmer 1.5s infinite;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  animation: progressShimmer 1.5s infinite;
 }
 
 .gt-progress-text {
   white-space: nowrap;
-  min-width: 150px;
+  min-width: 180px;
   text-align: right;
+  font-weight: 500;
 }
 
 /* Notifications */
@@ -195,16 +246,22 @@
   position: fixed;
   top: 20px;
   right: 20px;
-  padding: 12px 16px;
-  border-radius: 6px;
+  padding: 16px 20px;
+  border-radius: 12px;
   color: white;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   z-index: 10002;
   transform: translateX(100%);
-  transition: transform 0.3s ease;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 300px;
 }
 
 .gt-notification-show {
@@ -212,35 +269,58 @@
 }
 
 .gt-notification-success {
-  background: #28a745;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
 }
 
 .gt-notification-error {
-  background: #dc3545;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
 }
 
 .gt-notification-info {
-  background: var(--gt-highlight-color);
+  background: linear-gradient(135deg, var(--gt-highlight-color) 0%, #8b5cf6 100%);
+}
+
+.gt-notification-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
 }
 
 /* Animations */
-@keyframes gtFadeIn {
+@keyframes tooltipFadeIn {
   from {
     opacity: 0;
-    transform: translateY(-10px);
+    transform: translateX(-50%) translateY(-5px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateX(-50%) translateY(0);
   }
 }
 
-@keyframes gtProgressShimmer {
+@keyframes popupSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes progressShimmer {
   0% {
     transform: translateX(-100%);
   }
   100% {
     transform: translateX(100%);
+  }
+}
+
+@keyframes progressSpin {
+  to {
+    transform: rotate(360deg);
   }
 }
 
@@ -263,12 +343,12 @@
   }
 
   .gt-progress-container {
-    padding: 6px 12px;
-    font-size: 11px;
+    padding: 10px 16px;
+    font-size: 12px;
   }
 
   .gt-progress-text {
-    min-width: 120px;
+    min-width: 140px;
   }
 }
 
@@ -276,10 +356,12 @@
 @media (prefers-contrast: high) {
   .gt-word {
     border-bottom-width: 2px;
+    font-weight: 600;
   }
   
   .gt-word:hover::after {
-    border: 1px solid #666;
+    border: 2px solid #666;
+    background: #000;
   }
 
   .gt-progress-container {
@@ -293,8 +375,70 @@
   .gt-notification,
   .gt-popup,
   .gt-progress-container,
-  .gt-progress-fill {
+  .gt-progress-fill,
+  .gt-progress-fill::after {
     transition: none;
     animation: none;
+  }
+  
+  .gt-word:hover {
+    transform: none;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .gt-popup {
+    background: #1f2937;
+    border-color: #374151;
+  }
+  
+  .gt-popup-header {
+    background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+    border-color: #4b5563;
+  }
+  
+  .gt-popup-title {
+    color: #f9fafb;
+  }
+  
+  .gt-popup-close {
+    color: #9ca3af;
+  }
+  
+  .gt-popup-close:hover {
+    color: #f9fafb;
+    background: rgba(255, 255, 255, 0.1);
+  }
+  
+  .gt-original {
+    background: #374151;
+    border-color: #4b5563;
+    color: #e5e7eb;
+  }
+  
+  .gt-translation {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+    border-color: rgba(99, 102, 241, 0.3);
+  }
+}
+
+/* Print styles */
+@media print {
+  .gt-popup,
+  .gt-notification,
+  .gt-progress-container {
+    display: none !important;
+  }
+  
+  .gt-word {
+    color: inherit !important;
+    border-bottom: none !important;
+    background: none !important;
+  }
+  
+  .gt-word::after,
+  .gt-word::before {
+    display: none !important;
   }
 }
