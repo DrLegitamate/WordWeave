@@ -43,23 +43,36 @@ const LANGUAGE_DETECTOR = {
     'id': ['yang', 'dan', 'di', 'untuk', 'dengan', 'dari', 'pada', 'adalah', 'dalam', 'ke', 'akan', 'oleh', 'ini', 'itu', 'atau'],
     'uk': ['в', 'і', 'на', 'з', 'до', 'за', 'по', 'від', 'у', 'що', 'як', 'або', 'та', 'не', 'це']
   },
-
+  
   detectLanguage(text) {
-    const words = text.toLowerCase().split(/\s+/).slice(0, 50);
+    if (!text || text.length < 10) {
+      return 'en'; // Default to English for very short texts
+    }
+    
+    const words = text.toLowerCase().split(/\s+/).slice(0, 100); // Limit to first 100 words
     const scores = {};
     
+    // Initialize scores
     Object.keys(this.patterns).forEach(lang => {
       scores[lang] = 0;
     });
     
+    // Score each word
     words.forEach(word => {
+      // Remove punctuation
+      const cleanWord = word.replace(/[^\w]/g, '');
+      if (cleanWord.length < 2) return;
+      
       Object.keys(this.patterns).forEach(lang => {
-        if (this.patterns[lang].includes(word)) {
-          scores[lang]++;
+        if (this.patterns[lang].includes(cleanWord)) {
+          scores[lang] += 2; // Higher weight for exact matches
+        } else if (this.patterns[lang].some(pattern => cleanWord.includes(pattern))) {
+          scores[lang] += 1; // Partial match
         }
       });
     });
     
+    // Find language with highest score
     let maxScore = 0;
     let detectedLang = 'en';
     
@@ -70,7 +83,17 @@ const LANGUAGE_DETECTOR = {
       }
     });
     
-    return maxScore >= 2 ? detectedLang : 'en';
+    // Require minimum confidence
+    return maxScore >= 3 ? detectedLang : 'en';
+  },
+  
+  // Add function to detect language of multiple texts
+  detectLanguageBatch(texts) {
+    if (texts.length === 0) return 'en';
+    
+    // Combine texts for better detection
+    const combinedText = texts.join(' ');
+    return this.detectLanguage(combinedText);
   }
 };
 
@@ -78,6 +101,7 @@ const LANGUAGE_DETECTOR = {
 const TRANSLATION_SERVICES = {
   libretranslate: {
     url: 'https://libretranslate.com/translate',
+    batchUrl: 'https://libretranslate.com/translate', // Same endpoint, but with array
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     formatRequest: (text, targetLang, sourceLang = 'auto') => ({
@@ -85,18 +109,240 @@ const TRANSLATION_SERVICES = {
       source: sourceLang,
       target: targetLang
     }),
+    formatBatchRequest: (texts, targetLang, sourceLang = 'auto') => ({
+      q: texts, // Array of texts
+      source: sourceLang,
+      target: targetLang
+    }),
     parseResponse: (data) => data.translatedText,
-    supportsAutoDetect: true
+    parseBatchResponse: (data) => Array.isArray(data.translatedText) ? data.translatedText : [data.translatedText],
+    supportsAutoDetect: true,
+    supportsBatch: true
   },
   mymemory: {
     url: 'https://api.mymemory.translated.net/get',
     method: 'GET',
     formatRequest: (text, targetLang, sourceLang = 'en') => 
       `?q=${encodeURIComponent(text)}&langpair=${sourceLang}|${targetLang}`,
+    formatBatchRequest: (texts, targetLang, sourceLang = 'en') => {
+      // MyMemory doesn't support true batch, so we'll handle this in the batch function
+      return `?q=${encodeURIComponent(texts[0])}&langpair=${sourceLang}|${targetLang}`;
+    },
     parseResponse: (data) => data.responseData.translatedText,
-    supportsAutoDetect: false
+    parseBatchResponse: (data) => [data.responseData.translatedText],
+    supportsAutoDetect: false,
+    supportsBatch: false
   }
 };
+
+// Translation cache
+const translationCache = new Map();
+const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+
+function getCachedTranslation(text, targetLang) {
+  const key = `${text.toLowerCase().trim()}_${targetLang}`;
+  const cached = translationCache.get(key);
+  
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.translation;
+  }
+  
+  translationCache.delete(key); // Remove expired cache
+  return null;
+}
+
+function setCachedTranslation(text, targetLang, translation) {
+  const key = `${text.toLowerCase().trim()}_${targetLang}`;
+  
+  // Limit cache size
+  if (translationCache.size > 1000) {
+    const firstKey = translationCache.keys().next().value;
+    translationCache.delete(firstKey);
+  }
+  
+  translationCache.set(key, {
+    translation,
+    timestamp: Date.now()
+  });
+}
+
+// Rate limiting
+const translationQueue = [];
+let isProcessingQueue = false;
+let lastRequestTime = 0;
+const MIN_REQUEST_INTERVAL = 200; // ms
+
+async function translateTextWithRateLimit(text, targetLang, sourceLang = null) {
+  return new Promise((resolve, reject) => {
+    translationQueue.push({
+      text,
+      targetLang,
+      sourceLang,
+      resolve,
+      reject
+    });
+    
+    if (!isProcessingQueue) {
+      processTranslationQueue();
+    }
+  });
+}
+
+async function processTranslationQueue() {
+  if (translationQueue.length === 0) {
+    isProcessingQueue = false;
+    return;
+  }
+  
+  isProcessingQueue = true;
+  const request = translationQueue.shift();
+  
+  try {
+    // Rate limiting
+    const now = Date.now();
+    const timeSinceLastRequest = now - lastRequestTime;
+    if (timeSinceLastRequest < MIN_REQUEST_INTERVAL) {
+      await new Promise(resolve => 
+        setTimeout(resolve, MIN_REQUEST_INTERVAL - timeSinceLastRequest)
+      );
+    }
+    
+    const result = await translateText(request.text, request.targetLang, request.sourceLang);
+    lastRequestTime = Date.now();
+    request.resolve(result);
+  } catch (error) {
+    request.reject(error);
+  }
+  
+  // Process next request
+  setTimeout(processTranslationQueue, 0);
+}
+
+// Validate state updates
+function validateStateUpdate(payload) {
+  const validated = {};
+  
+  // Validate translation rate
+  if (payload.translationRate && 
+      ['minimal', 'light', 'moderate', 'medium', 'heavy', 'intensive'].includes(payload.translationRate)) {
+    validated.translationRate = payload.translationRate;
+  }
+  
+  // Validate languages
+  if (payload.targetLanguage && typeof payload.targetLanguage === 'string' && 
+      payload.targetLanguage.length === 2) {
+    validated.targetLanguage = payload.targetLanguage;
+  }
+  
+  if (payload.sourceLanguage && typeof payload.sourceLanguage === 'string' && 
+      payload.sourceLanguage.length === 2) {
+    validated.sourceLanguage = payload.sourceLanguage;
+  }
+  
+  // Validate boolean values
+  ['enabled', 'translateHeaders', 'translateNav', 'showTooltips', 'autoDetectLanguage'].forEach(key => {
+    if (typeof payload[key] === 'boolean') {
+      validated[key] = payload[key];
+    }
+  });
+  
+  // Validate color
+  if (payload.highlightColor && /^#[0-9A-F]{6}$/i.test(payload.highlightColor)) {
+    validated.highlightColor = payload.highlightColor;
+  }
+  
+  // Validate font size
+  if (payload.fontSize && ['small', 'medium', 'large'].includes(payload.fontSize)) {
+    validated.fontSize = payload.fontSize;
+  }
+  
+  // Validate excluded sites
+  if (Array.isArray(payload.excludedSites)) {
+    validated.excludedSites = payload.excludedSites.filter(site => 
+      typeof site === 'string' && site.length > 0
+    );
+  }
+  
+  return validated;
+}
+
+// Batch translation function
+async function translateTextBatch(texts, targetLang, sourceLang = null) {
+  const service = TRANSLATION_SERVICES[state.translationService] || TRANSLATION_SERVICES.libretranslate;
+  console.log('WordWeave Background: Using translation service for batch:', state.translationService);
+  
+  try {
+    let sourceLanguage = sourceLang;
+    if (!sourceLanguage) {
+      if (state.autoDetectLanguage && service.supportsAutoDetect) {
+        sourceLanguage = 'auto';
+      } else if (state.autoDetectLanguage && !service.supportsAutoDetect) {
+        // For batch, detect language from combined text for better accuracy
+        sourceLanguage = LANGUAGE_DETECTOR.detectLanguageBatch(texts);
+      } else {
+        sourceLanguage = state.sourceLanguage || 'en';
+      }
+    }
+
+    // Check if service supports batch translation
+    if (service.supportsBatch) {
+      // Use batch endpoint if available
+      let url = service.batchUrl || service.url;
+      let options = {
+        method: 'POST',
+        headers: service.headers || {}
+      };
+      
+      options.body = JSON.stringify(service.formatBatchRequest(texts, targetLang, sourceLanguage));
+      
+      console.log('WordWeave Background: Making batch request to:', url);
+      const response = await fetch(url, options);
+      if (!response.ok) {
+        throw new Error(`Translation service error: ${response.status} - ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log('WordWeave Background: Batch translation response:', data);
+      const translations = service.parseBatchResponse(data);
+      
+      if (!translations || !Array.isArray(translations)) {
+        throw new Error('Invalid batch translation response');
+      }
+      
+      return translations;
+    } else {
+      // Fallback to sequential translation with concurrency control
+      const translations = [];
+      const CONCURRENT_REQUESTS = 5; // Limit concurrent requests
+      
+      for (let i = 0; i < texts.length; i += CONCURRENT_REQUESTS) {
+        const batch = texts.slice(i, i + CONCURRENT_REQUESTS);
+        const batchPromises = batch.map(text => 
+          translateText(text, targetLang, sourceLanguage)
+        );
+        
+        try {
+          const batchResults = await Promise.all(batchPromises);
+          translations.push(...batchResults);
+        } catch (batchError) {
+          console.error('WordWeave Background: Batch translation error:', batchError);
+          // Fill with original text for failed translations
+          translations.push(...batch.map(() => null));
+        }
+        
+        // Small delay between batches to avoid rate limiting
+        if (i + CONCURRENT_REQUESTS < texts.length) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+      
+      return translations;
+    }
+  } catch (error) {
+    console.error('WordWeave Background: Batch translation failed:', error);
+    throw error;
+  }
+}
 
 // Initialize state from storage
 browser.storage.local.get().then(result => {
@@ -107,18 +353,19 @@ browser.storage.local.get().then(result => {
 // Listen for messages from content scripts and popup
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log('WordWeave Background: Received message:', message.type);
-  
   switch (message.type) {
     case 'GET_STATE':
       console.log('WordWeave Background: Sending state:', state);
       sendResponse(state);
       break;
-      
     case 'UPDATE_STATE':
-      state = { ...state, ...message.payload };
-      browser.storage.local.set(message.payload);
+      // Validate incoming state
+      const validatedPayload = validateStateUpdate(message.payload);
+      state = { ...state, ...validatedPayload };
       
-      console.log('WordWeave Background: State updated:', state);
+      // Only save changed properties
+      browser.storage.local.set(validatedPayload);
+      console.log('WordWeave Background: State updated:', validatedPayload);
       
       // Notify all content scripts of state change
       browser.tabs.query({}).then(tabs => {
@@ -135,10 +382,9 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
       });
       sendResponse({ success: true });
       break;
-      
     case 'TRANSLATE_TEXT':
       console.log('WordWeave Background: Translating text:', message.payload.text);
-      translateText(message.payload.text, state.targetLanguage, message.payload.sourceLang)
+      translateTextWithRateLimit(message.payload.text, state.targetLanguage, message.payload.sourceLang)
         .then(translation => {
           console.log('WordWeave Background: Translation result:', translation);
           sendResponse({ translation });
@@ -148,7 +394,18 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
           sendResponse({ error: error.message });
         });
       return true;
-      
+    case 'TRANSLATE_TEXT_BATCH':
+      console.log('WordWeave Background: Translating batch of texts:', message.payload.texts);
+      translateTextBatch(message.payload.texts, state.targetLanguage, message.payload.sourceLang)
+        .then(translations => {
+          console.log('WordWeave Background: Batch translation result:', translations);
+          sendResponse({ translations });
+        })
+        .catch(error => {
+          console.error('WordWeave Background: Batch translation error:', error);
+          sendResponse({ error: error.message });
+        });
+      return true;
     case 'CHECK_SITE_EXCLUDED':
       const url = new URL(sender.tab.url);
       const isExcluded = state.excludedSites.some(site => 
@@ -157,13 +414,11 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
       console.log('WordWeave Background: Site exclusion check:', url.hostname, isExcluded);
       sendResponse({ excluded: isExcluded });
       break;
-
     case 'DETECT_LANGUAGE':
       const detectedLang = LANGUAGE_DETECTOR.detectLanguage(message.payload.text);
       console.log('WordWeave Background: Language detected:', detectedLang);
       sendResponse({ language: detectedLang });
       break;
-
     case 'GET_WORD_FREQUENCY':
       const lang = message.payload.language || 'en';
       const commonWords = WORD_FREQUENCY.common[lang] || WORD_FREQUENCY.common['en'];
@@ -173,13 +428,26 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 async function translateText(text, targetLang, sourceLang = null) {
-  const service = TRANSLATION_SERVICES[state.translationService] || TRANSLATION_SERVICES.libretranslate;
+  // Input validation
+  if (!text || text.trim().length === 0) {
+    throw new Error('Empty text provided for translation');
+  }
   
+  if (!targetLang || targetLang.length !== 2) {
+    throw new Error('Invalid target language');
+  }
+  
+  // Check cache first
+  const cachedTranslation = getCachedTranslation(text, targetLang);
+  if (cachedTranslation) {
+    return cachedTranslation;
+  }
+  
+  const service = TRANSLATION_SERVICES[state.translationService] || TRANSLATION_SERVICES.libretranslate;
   console.log('WordWeave Background: Using translation service:', state.translationService);
   
   try {
     let sourceLanguage = sourceLang;
-    
     if (!sourceLanguage) {
       if (state.autoDetectLanguage && service.supportsAutoDetect) {
         sourceLanguage = 'auto';
@@ -189,86 +457,116 @@ async function translateText(text, targetLang, sourceLang = null) {
         sourceLanguage = state.sourceLanguage || 'en';
       }
     }
-    
     console.log('WordWeave Background: Translation params:', {
       text: text.substring(0, 50),
       source: sourceLanguage,
       target: targetLang
     });
-    
     if (sourceLanguage === targetLang && sourceLanguage !== 'auto') {
       console.log('WordWeave Background: Source and target languages are the same, returning original text');
       return text;
     }
-    
     let url = service.url;
     let options = {
       method: service.method,
       headers: service.headers || {}
     };
-    
     if (service.method === 'POST') {
       options.body = JSON.stringify(service.formatRequest(text, targetLang, sourceLanguage));
     } else {
       url += service.formatRequest(text, targetLang, sourceLanguage);
     }
-    
     console.log('WordWeave Background: Making request to:', url);
-    
     const response = await fetch(url, options);
-    
     if (!response.ok) {
       throw new Error(`Translation service error: ${response.status} - ${response.statusText}`);
     }
-    
     const data = await response.json();
     console.log('WordWeave Background: Translation response:', data);
-    
     if (service === TRANSLATION_SERVICES.mymemory && data.responseStatus !== 200) {
       throw new Error(`MyMemory API error: ${data.responseDetails || 'Unknown error'}`);
     }
-    
     const translation = service.parseResponse(data);
-    
     if (!translation || translation.trim() === '') {
       throw new Error('Empty translation received');
     }
     
+    // Cache the translation
+    setCachedTranslation(text, targetLang, translation);
+    
     console.log('WordWeave Background: Final translation:', translation);
     return translation;
-    
   } catch (error) {
     console.error('WordWeave Background: Translation failed:', error);
     
-    // Try fallback service if primary fails
-    if (state.translationService !== 'mymemory') {
+    // Try multiple fallback strategies
+    const fallbackStrategies = [
+      () => tryAlternativeService(text, targetLang, sourceLang),
+      () => tryCachedTranslation(text, targetLang),
+      () => trySimpleWordTranslation(text, targetLang)
+    ];
+    
+    for (const strategy of fallbackStrategies) {
       try {
-        console.log('WordWeave Background: Trying fallback service...');
-        const fallbackService = TRANSLATION_SERVICES.mymemory;
-        const fallbackSourceLang = sourceLang || LANGUAGE_DETECTOR.detectLanguage(text);
-        const fallbackUrl = fallbackService.url + fallbackService.formatRequest(text, targetLang, fallbackSourceLang);
-        
-        const fallbackResponse = await fetch(fallbackUrl);
-        if (!fallbackResponse.ok) {
-          throw new Error(`Fallback service error: ${fallbackResponse.status}`);
+        const result = await strategy();
+        if (result) {
+          console.log('WordWeave Background: Fallback successful:', result);
+          return result;
         }
-        
-        const fallbackData = await fallbackResponse.json();
-        if (fallbackData.responseStatus !== 200) {
-          throw new Error(`Fallback API error: ${fallbackData.responseDetails}`);
-        }
-        
-        const fallbackTranslation = fallbackService.parseResponse(fallbackData);
-        console.log('WordWeave Background: Fallback translation successful:', fallbackTranslation);
-        return fallbackTranslation;
       } catch (fallbackError) {
-        console.error('WordWeave Background: Fallback translation failed:', fallbackError);
-        throw new Error('All translation services failed');
+        console.warn('WordWeave Background: Fallback failed:', fallbackError);
+        continue;
       }
     }
     
-    throw error;
+    // All fallbacks failed
+    throw new Error('All translation attempts failed: ' + error.message);
   }
+}
+
+// Fallback functions
+async function tryAlternativeService(text, targetLang, sourceLang) {
+  // Try fallback service if primary fails
+  if (state.translationService !== 'mymemory') {
+    try {
+      console.log('WordWeave Background: Trying fallback service...');
+      const fallbackService = TRANSLATION_SERVICES.mymemory;
+      const fallbackSourceLang = sourceLang || LANGUAGE_DETECTOR.detectLanguage(text);
+      const fallbackUrl = fallbackService.url + fallbackService.formatRequest(text, targetLang, fallbackSourceLang);
+      const fallbackResponse = await fetch(fallbackUrl);
+      if (!fallbackResponse.ok) {
+        throw new Error(`Fallback service error: ${fallbackResponse.status}`);
+      }
+      const fallbackData = await fallbackResponse.json();
+      if (fallbackData.responseStatus !== 200) {
+        throw new Error(`Fallback API error: ${fallbackData.responseDetails}`);
+      }
+      const fallbackTranslation = fallbackService.parseResponse(fallbackData);
+      
+      // Cache the translation
+      setCachedTranslation(text, targetLang, fallbackTranslation);
+      
+      console.log('WordWeave Background: Fallback translation successful:', fallbackTranslation);
+      return fallbackTranslation;
+    } catch (fallbackError) {
+      console.error('WordWeave Background: Fallback translation failed:', fallbackError);
+      throw fallbackError;
+    }
+  }
+  throw new Error('No alternative service available');
+}
+
+function tryCachedTranslation(text, targetLang) {
+  // Try to get from cache again (might have been added by another process)
+  return getCachedTranslation(text, targetLang);
+}
+
+function trySimpleWordTranslation(text, targetLang) {
+  // For very simple words, return the original
+  if (text.split(/\s+/).length === 1 && text.length < 4) {
+    return text;
+  }
+  return null; // No simple translation available
 }
 
 // Add context menu for quick actions
