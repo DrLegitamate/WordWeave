@@ -285,4 +285,306 @@ body {
   margin-bottom: var(--spacing-2);
   font-weight: 500;
   color: var(--text-primary);
-  font-size: var(--font
+  font-size: var(--font-size-sm);
+}
+
+.form-group label svg {
+  width: 16px;
+  height: 16px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.form-group input[type="text"],
+.form-group input[type="color"],
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: var(--spacing-2) var(--spacing-3);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+  transition: var(--transition);
+  font-family: inherit; /* For textarea */
+}
+
+.form-group input[type="text"]:focus,
+.form-group input[type="color"]:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+}
+
+.form-group textarea {
+    resize: vertical; /* Allow vertical resizing */
+    font-family: monospace; /* Optional: for domain list */
+}
+
+/* Color Input Group */
+.color-input-group {
+  display: flex;
+  gap: var(--spacing-2);
+}
+
+.color-input-group input[type="color"] {
+  width: 50px;
+  height: 40px;
+  padding: var(--spacing-1);
+  cursor: pointer;
+  border: none; /* Remove default border for color input */
+  border-radius: var(--border-radius-sm);
+  background: none;
+}
+
+.color-input-group input[type="text"] {
+  flex-grow: 1;
+  font-family: monospace;
+}
+
+/* Checkbox Group */
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  cursor: pointer;
+  user-select: none;
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+}
+
+.checkbox-label input[type="checkbox"] {
+  /* Hide the default checkbox */
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+/* Create a custom checkbox */
+.checkmark {
+  height: 18px;
+  width: 18px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  transition: var(--transition);
+  flex-shrink: 0;
+  margin-top: 2px; /* Align with text */
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* On mouse-over, add a grey background color */
+.checkbox-label:hover input ~ .checkmark {
+  border-color: var(--border-color-hover);
+}
+
+/* When the checkbox is checked, add a blue background */
+.checkbox-label input:checked ~ .checkmark {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+/* Checkmark/indicator (hidden when not checked) */
+.checkmark:after {
+  content: "";
+  position: absolute;
+  display: none;
+}
+
+/* Show the checkmark when checked */
+.checkbox-label input:checked ~ .checkmark:after {
+  display: block;
+}
+
+/* Style the checkmark/indicator */
+.checkbox-label .checkmark:after {
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+
+/* Help Text */
+.help-text {
+  display: block;
+  margin-top: var(--spacing-1);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+/* Preview Area */
+.preview-area {
+  padding: var(--spacing-4);
+  border: 1px dashed var(--border-color);
+  border-radius: var(--border-radius);
+  background-color: var(--bg-secondary);
+}
+
+.preview-text {
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+}
+
+.gt-word.preview-word {
+  background-color: var(--preview-highlight-color, var(--primary-color)); /* Default if CSS var not set */
+  color: white;
+  padding: 0 4px;
+  border-radius: 3px;
+  font-weight: 500;
+  font-size: var(--preview-font-size, inherit); /* Default if CSS var not set */
+  cursor: help; /* Indicate tooltip */
+  transition: background-color var(--transition);
+}
+
+.gt-word.preview-word:hover {
+    opacity: 0.9;
+}
+
+/* Footer */
+.options-footer {
+  padding: var(--spacing-4) var(--spacing-6);
+  background-color: var(--bg-card);
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.footer-actions {
+  display: flex;
+  gap: var(--spacing-3);
+  justify-content: flex-end;
+}
+
+.save-status {
+  min-height: 20px;
+  text-align: right;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.save-status.success {
+  color: var(--success-color);
+}
+
+.save-status.error {
+  color: var(--error-color);
+}
+
+/* Buttons */
+button {
+  padding: var(--spacing-2) var(--spacing-4);
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+}
+
+button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.primary-btn {
+  background-color: var(--primary-color);
+  color: white;
+  box-shadow: var(--shadow-sm);
+}
+
+.primary-btn:hover:not(:disabled) {
+  background-color: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.primary-btn:active:not(:disabled) {
+  background-color: var(--primary-active);
+  transform: translateY(0);
+}
+
+.secondary-btn {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.secondary-btn:hover:not(:disabled) {
+  background-color: var(--border-color);
+  border-color: var(--border-color-hover);
+}
+
+.secondary-btn:active:not(:disabled) {
+  background-color: var(--border-color-hover);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .options-header {
+    flex-direction: column;
+    gap: var(--spacing-3);
+    text-align: center;
+  }
+
+  .header-right {
+    align-items: center;
+  }
+
+  .options-nav {
+    padding: 0 var(--spacing-4);
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .nav-btn {
+    padding: var(--spacing-3) var(--spacing-3);
+    font-size: var(--font-size-xs);
+    flex-shrink: 0;
+  }
+
+  .options-content {
+    padding: var(--spacing-4);
+  }
+
+  .option-section {
+    padding: var(--spacing-4);
+  }
+
+  .form-row {
+    grid-template-columns: 1fr; /* Stack on small screens */
+  }
+
+  .footer-actions {
+    flex-direction: column;
+  }
+
+  .footer-actions button {
+    width: 100%;
+  }
+}
