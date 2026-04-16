@@ -119,15 +119,39 @@ class Translator {
 
   setupMessageListener() {
     browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
-      switch (message.type) {
-        case 'STATE_UPDATED':
-          this.onStateUpdated(message.payload);
-          break;
-        case 'TRANSLATE_SELECTION':
-          this.translateSelection(message.payload.text);
-          break;
+      try {
+        switch (message.type) {
+          case 'STATE_UPDATED':
+            this.onStateUpdated(message.payload);
+            sendResponse({ status: 'ok' });
+            break;
+          case 'TRANSLATE_SELECTION':
+            this.translateSelection(message.payload.text);
+            sendResponse({ status: 'ok' });
+            break;
+          case 'FORCE_TRANSLATE':
+            dbg('WordWeave: Received FORCE_TRANSLATE command');
+            if (this.state?.enabled) {
+              this.processPage();
+              sendResponse({ status: 'ok', message: 'Translation forced' });
+            } else {
+              sendResponse({ status: 'error', message: 'Extension is disabled' });
+            }
+            break;
+          case 'CLEAR_TRANSLATIONS':
+            dbg('WordWeave: Received CLEAR_TRANSLATIONS command');
+            this.restoreOriginalContent();
+            this.hideProgress();
+            sendResponse({ status: 'ok', message: 'Translations cleared' });
+            break;
+          default:
+            dbg('WordWeave: Unknown message type:', message.type);
+            sendResponse({ status: 'error', message: 'Unknown message type' });
+        }
+      } catch (error) {
+        console.error('WordWeave: Error handling message:', error);
+        sendResponse({ status: 'error', message: error.message });
       }
-      sendResponse({ status: 'ok' });
       return true;
     });
   }

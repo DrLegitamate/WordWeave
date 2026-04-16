@@ -13,7 +13,7 @@ const CONFIG = {
   MIN_DETECTION_CONFIDENCE: 3,
 };
 
-let state = {
+const DEFAULT_STATE = {
   enabled: false,
   translationRate: 'moderate',
   targetLanguage: 'es',
@@ -27,6 +27,8 @@ let state = {
   autoDetectLanguage: true,
   excludedSites: []
 };
+
+let state = { ...DEFAULT_STATE };
 
 // Word frequency lists for better translation selection
 const WORD_FREQUENCY = {
@@ -327,11 +329,34 @@ async function translateTextBatch(texts, targetLang, sourceLang = null) {
   }
 }
 
-// Initialize state from storage
-browser.storage.local.get().then(result => {
-  state = { ...state, ...result };
-  dbg('WordWeave Background: State loaded:', state);
-});
+/**
+ * Initialize state from storage with validation and error handling
+ */
+function initializeState() {
+  browser.storage.local.get().then(result => {
+    try {
+      if (result && typeof result === 'object') {
+        // Validate and merge stored state with defaults
+        const validatedState = validateStateUpdate(result);
+        state = { ...DEFAULT_STATE, ...validatedState };
+        dbg('WordWeave Background: State loaded from storage:', state);
+      } else {
+        state = { ...DEFAULT_STATE };
+        dbg('WordWeave Background: No stored state found, using defaults');
+      }
+    } catch (error) {
+      console.error('WordWeave Background: Error loading state:', error);
+      state = { ...DEFAULT_STATE };
+      console.warn('WordWeave Background: Using default state due to error');
+    }
+  }).catch(error => {
+    console.error('WordWeave Background: Storage access failed:', error);
+    state = { ...DEFAULT_STATE };
+  });
+}
+
+// Initialize state when service worker starts
+initializeState();
 
 // Listen for messages from content scripts and popup
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -343,21 +368,36 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
     case 'UPDATE_STATE': {
       const validatedPayload = validateStateUpdate(message.payload);
+      const oldState = { ...state };
       state = { ...state, ...validatedPayload };
-      browser.storage.local.set(validatedPayload);
-      dbg('WordWeave Background: State updated:', validatedPayload);
 
-      browser.tabs.query({}).then(tabs => {
-        tabs.forEach(tab => {
-          if (tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('moz-extension://')) {
-            browser.tabs.sendMessage(tab.id, {
-              type: 'STATE_UPDATED',
-              payload: state
-            }).catch(() => {});
-          }
+      // Persist the updated state to storage
+      browser.storage.local.set(validatedPayload).then(() => {
+        dbg('WordWeave Background: State updated and persisted:', validatedPayload);
+
+        // Broadcast the full state to all tabs
+        browser.tabs.query({}).then(tabs => {
+          tabs.forEach(tab => {
+            if (tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('moz-extension://')) {
+              browser.tabs.sendMessage(tab.id, {
+                type: 'STATE_UPDATED',
+                payload: state
+              }).catch(error => {
+                dbg('WordWeave Background: Could not send message to tab:', error);
+              });
+            }
+          });
+        }).catch(error => {
+          console.error('WordWeave Background: Failed to query tabs:', error);
         });
+
+        sendResponse({ success: true });
+      }).catch(error => {
+        console.error('WordWeave Background: Failed to persist state:', error);
+        // Rollback state if persistence fails
+        state = oldState;
+        sendResponse({ success: false, error: 'Failed to save state to storage' });
       });
-      sendResponse({ success: true });
       break;
     }
     case 'TRANSLATE_TEXT': {
