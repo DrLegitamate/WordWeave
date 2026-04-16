@@ -81,18 +81,16 @@ function setupEventListeners() {
     colorPicker.addEventListener('input', () => {
       colorTextInput.value = colorPicker.value;
       updatePreview(); // Update preview on change
+      autoSaveField('highlightColor', colorPicker.value); // Auto-save
     });
     colorTextInput.addEventListener('change', () => {
       const isValidHex = /^#[0-9A-Fa-f]{6}$/.test(colorTextInput.value);
       if (isValidHex) {
         colorPicker.value = colorTextInput.value;
         updatePreview(); // Update preview on valid change
+        autoSaveField('highlightColor', colorTextInput.value); // Auto-save
       } else {
         updateStatus('Invalid hex color format (e.g., #FF0000)', false);
-        // Revert to last known good value from state or picker
-        // This is a bit tricky without global state here, but color picker usually holds valid value
-        // We'll just not update the picker if text is invalid for now.
-        // A more robust solution might store the last valid value.
       }
     });
   }
@@ -100,9 +98,53 @@ function setupEventListeners() {
   // Update preview when font size or highlight color changes
   const fontSizeSelect = document.getElementById('fontSize');
   if (fontSizeSelect) {
-    fontSizeSelect.addEventListener('change', updatePreview);
+    fontSizeSelect.addEventListener('change', () => {
+      updatePreview();
+      autoSaveField('fontSize', fontSizeSelect.value); // Auto-save
+    });
   }
-  // Color picker event is already handled above
+
+  // Auto-save language selections
+  const sourceLanguageSelect = document.getElementById('sourceLanguageOptions');
+  if (sourceLanguageSelect) {
+    sourceLanguageSelect.addEventListener('change', () => {
+      autoSaveField('sourceLanguage', sourceLanguageSelect.value);
+    });
+  }
+
+  const targetLanguageSelect = document.getElementById('targetLanguageOptions');
+  if (targetLanguageSelect) {
+    targetLanguageSelect.addEventListener('change', () => {
+      autoSaveField('targetLanguage', targetLanguageSelect.value);
+    });
+  }
+
+  // Auto-save translation rate
+  const translationRateSelect = document.getElementById('translationRateOptions');
+  if (translationRateSelect) {
+    translationRateSelect.addEventListener('change', () => {
+      autoSaveField('translationRate', translationRateSelect.value);
+    });
+  }
+
+  // Auto-save translation service
+  const translationService = document.getElementById('translationService');
+  if (translationService) {
+    translationService.addEventListener('change', () => {
+      autoSaveField('translationService', translationService.value);
+    });
+  }
+
+  // Auto-save checkboxes
+  const checkboxIds = ['translateHeaders', 'translateNav', 'showTooltips'];
+  checkboxIds.forEach(id => {
+    const checkbox = document.getElementById(id);
+    if (checkbox) {
+      checkbox.addEventListener('change', () => {
+        autoSaveField(id, checkbox.checked);
+      });
+    }
+  });
 
   // --- Actions ---
   const saveButton = document.getElementById('saveOptions');
@@ -201,11 +243,11 @@ async function handleSave() {
     });
 
     if (response && response.success) {
-      updateStatus('Settings saved successfully!', true);
+      updateStatus('All settings saved successfully!', true);
       // Briefly show success, then clear
       setTimeout(() => updateStatus('', true), 3000);
     } else {
-      throw new Error('Background script did not acknowledge save');
+      throw new Error(response?.error || 'Background script did not acknowledge save');
     }
 
   } catch (error) {
@@ -304,5 +346,33 @@ function updateStatus(message, isSuccess = true) {
   statusElement.className = 'save-status'; // Reset classes
   if (message) {
     statusElement.classList.add(isSuccess ? 'success' : 'error');
+  }
+}
+
+/**
+ * Auto-save individual field changes
+ * Saves settings immediately without requiring the user to click Save
+ */
+async function autoSaveField(fieldName, fieldValue) {
+  try {
+    const payload = {};
+    payload[fieldName] = fieldValue;
+
+    const response = await browser.runtime.sendMessage({
+      type: 'UPDATE_STATE',
+      payload: payload
+    });
+
+    if (response && response.success) {
+      // Show brief success message
+      updateStatus('Saved', true);
+      setTimeout(() => updateStatus('', true), 1500);
+    } else {
+      console.error('Auto-save failed for field:', fieldName);
+      updateStatus('Auto-save failed', false);
+    }
+  } catch (error) {
+    console.error('Auto-save error:', error);
+    updateStatus('Auto-save error: ' + error.message, false);
   }
 }

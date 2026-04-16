@@ -3,7 +3,7 @@
 document.addEventListener('DOMContentLoaded', async () => {
   let state = null;
   let currentTab = null;
-  
+
   try {
     // Load current state
     state = await browser.runtime.sendMessage({ type: 'GET_STATE' });
@@ -16,11 +16,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (tabs.length > 0) {
         currentTab = tabs[0];
     }
-    
+
     initializeUI(state);
     setupEventListeners();
     updateStatus(state.enabled ? 'Ready to translate' : 'Extension disabled');
-    
+
   } catch (error) {
     console.error('Popup initialization failed:', error);
     updateStatus('Error loading extension', false);
@@ -32,18 +32,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 function initializeUI(state) {
   // Initialize toggle
   const enableToggle = document.getElementById('enableToggle');
-  if (enableToggle) enableToggle.checked = state.enabled;
-  
+  if (enableToggle) {
+    enableToggle.checked = state.enabled;
+  }
+
   // Initialize settings
   const targetLanguageSelect = document.getElementById('targetLanguage');
   const translationRateSelect = document.getElementById('translationRate');
-  
-  if (targetLanguageSelect) targetLanguageSelect.value = state.targetLanguage || 'es';
-  if (translationRateSelect) translationRateSelect.value = state.translationRate || 'moderate';
-  
+
+  if (targetLanguageSelect) {
+    targetLanguageSelect.value = state.targetLanguage || 'es';
+  }
+  if (translationRateSelect) {
+    translationRateSelect.value = state.translationRate || 'moderate';
+  }
+
   // Update status indicator
   updateStatusIndicator(state.enabled);
-  
+
   // Update intensity indicator
   updateIntensityIndicator(state.translationRate || 'moderate');
 }
@@ -62,41 +68,71 @@ function setupEventListeners() {
   if (enableToggle) {
     enableToggle.addEventListener('change', async (e) => {
       const enabled = e.target.checked;
-      await updateState({ enabled });
-      updateStatus(enabled ? 'Extension enabled' : 'Extension disabled', enabled);
-      updateStatusIndicator(enabled);
-      
-      // Add haptic feedback simulation
-      if (enabled) {
-        showBriefAnimation();
+      try {
+        await updateState({ enabled });
+        updateStatus(enabled ? 'Extension enabled' : 'Extension disabled', true);
+        updateStatusIndicator(enabled);
+
+        // Add haptic feedback simulation
+        if (enabled) {
+          showBriefAnimation();
+        }
+      } catch (error) {
+        console.error('Error toggling extension:', error);
+        // Revert the toggle if the update failed
+        e.target.checked = !enabled;
+        updateStatus('Failed to update extension state', false);
       }
     });
   }
-  
-  // Target language changes
+
+  // Target language changes - with immediate persistence
   if (targetLanguageSelect) {
     targetLanguageSelect.addEventListener('change', async (e) => {
+      const newLanguage = e.target.value;
       showActionLoading(targetLanguageSelect);
-      await updateState({ targetLanguage: e.target.value });
-      updateStatus('Target language updated', true);
-      showBriefAnimation();
-      hideActionLoading(targetLanguageSelect);
+      try {
+        await updateState({ targetLanguage: newLanguage });
+        updateStatus('Target language updated to ' + e.target.options[e.target.selectedIndex].text, true);
+        showBriefAnimation();
+      } catch (error) {
+        console.error('Error updating target language:', error);
+        // Revert selection on error
+        const previousState = await browser.runtime.sendMessage({ type: 'GET_STATE' });
+        if (previousState) {
+          targetLanguageSelect.value = previousState.targetLanguage;
+        }
+        updateStatus('Failed to update language', false);
+      } finally {
+        hideActionLoading(targetLanguageSelect);
+      }
     });
   }
-  
+
   // Translation rate changes
   if (translationRateSelect) {
     translationRateSelect.addEventListener('change', async (e) => {
       const rate = e.target.value;
       showActionLoading(translationRateSelect);
-      await updateState({ translationRate: rate });
-      updateStatus('Learning intensity updated', true);
-      updateIntensityIndicator(rate);
-      showBriefAnimation();
-      hideActionLoading(translationRateSelect);
+      try {
+        await updateState({ translationRate: rate });
+        updateStatus('Learning intensity updated', true);
+        updateIntensityIndicator(rate);
+        showBriefAnimation();
+      } catch (error) {
+        console.error('Error updating translation rate:', error);
+        // Revert selection on error
+        const previousState = await browser.runtime.sendMessage({ type: 'GET_STATE' });
+        if (previousState) {
+          translationRateSelect.value = previousState.translationRate;
+        }
+        updateStatus('Failed to update intensity', false);
+      } finally {
+        hideActionLoading(translationRateSelect);
+      }
     });
   }
-  
+
   // Quick actions
   if (translatePageBtn) {
     translatePageBtn.addEventListener('click', async () => {
@@ -106,12 +142,18 @@ function setupEventListeners() {
       try {
         const tabs = await browser.tabs.query({ active: true, currentWindow: true });
         if (tabs[0]) {
-          await browser.tabs.sendMessage(tabs[0].id, { type: 'FORCE_TRANSLATE' });
-          updateStatus('Page translated!', true);
+          const response = await browser.tabs.sendMessage(tabs[0].id, { type: 'FORCE_TRANSLATE' });
+          if (response?.status === 'ok') {
+            updateStatus('Page translated!', true);
+          } else {
+            updateStatus(response?.message || 'Translation failed', false);
+          }
+        } else {
+          updateStatus('No active tab found', false);
         }
       } catch (error) {
         console.error("Translate page error:", error);
-        updateStatus('Translation failed', false);
+        updateStatus('Translation failed - extension may not be active on this page', false);
       } finally {
         hideActionLoading(translatePageBtn);
       }
@@ -125,12 +167,18 @@ function setupEventListeners() {
       try {
         const tabs = await browser.tabs.query({ active: true, currentWindow: true });
         if (tabs[0]) {
-          await browser.tabs.sendMessage(tabs[0].id, { type: 'CLEAR_TRANSLATIONS' });
-          updateStatus('Page reset!', true);
+          const response = await browser.tabs.sendMessage(tabs[0].id, { type: 'CLEAR_TRANSLATIONS' });
+          if (response?.status === 'ok') {
+            updateStatus('Page reset!', true);
+          } else {
+            updateStatus(response?.message || 'Reset failed', false);
+          }
+        } else {
+          updateStatus('No active tab found', false);
         }
       } catch (error) {
         console.error("Clear translations error:", error);
-        updateStatus('Reset failed', false);
+        updateStatus('Reset failed - extension may not be active on this page', false);
       } finally {
         hideActionLoading(clearTranslationsBtn);
       }
@@ -146,19 +194,15 @@ function setupEventListeners() {
         try {
             const url = new URL(currentTab.url);
             const hostname = url.hostname;
-            
+
             // Get current state to update excluded sites
             const currentState = await browser.runtime.sendMessage({ type: 'GET_STATE' });
             let excludedSites = currentState.excludedSites || [];
-            
+
             if (!excludedSites.includes(hostname)) {
                 excludedSites.push(hostname);
                 await updateState({ excludedSites });
                 updateStatus(`Excluded ${hostname}`, true);
-                // Optionally disable extension for this site immediately
-                // await updateState({ enabled: false }); 
-                // updateStatusIndicator(false);
-                // document.getElementById('enableToggle').checked = false;
             } else {
                  updateStatus(`Already excluded`, true);
             }
@@ -169,17 +213,17 @@ function setupEventListeners() {
         }
     });
   }
-  
+
   // Action buttons
   if (openOptionsBtn) {
     openOptionsBtn.addEventListener('click', () => {
        showActionLoading(openOptionsBtn);
        browser.runtime.openOptionsPage();
        // Don't close immediately, let the loading feedback show
-       setTimeout(() => window.close(), 300); 
+       setTimeout(() => window.close(), 300);
     });
   }
-  
+
   // Help link
   if (helpLink) {
     helpLink.addEventListener('click', (e) => {
@@ -197,7 +241,7 @@ async function updateState(changes) {
       payload: changes
     });
     if (!response || !response.success) {
-        throw new Error('State update not acknowledged by background script');
+        throw new Error(response?.error || 'State update not acknowledged by background script');
     }
     return response;
   } catch (error) {
@@ -214,7 +258,7 @@ function updateStatus(message, isSuccess = true) {
   statusText.textContent = message;
   statusText.classList.remove('loading');
   statusText.style.color = isSuccess ? 'var(--text-secondary)' : 'var(--error-color)';
-  
+
   // Clear status after 3 seconds for temporary success messages
   if (isSuccess && (message.includes('updated') || message.includes('enabled') || message.includes('disabled') || message.includes('translated') || message.includes('reset') || message.includes('Excluded'))) {
     setTimeout(() => {
@@ -241,7 +285,7 @@ function updateStatusIndicator(enabled) {
 function updateIntensityIndicator(rate) {
   const dots = document.querySelectorAll('.intensity-dot');
   const label = document.getElementById('intensityLabel');
-  
+
   if (dots.length === 0 || !label) return; // Safety check if elements not found
 
   const intensityMap = {
@@ -252,9 +296,9 @@ function updateIntensityIndicator(rate) {
     heavy: { dots: 4, label: 'Intensive learning' },
     intensive: { dots: 5, label: 'Maximum intensity' }
   };
-  
+
   const config = intensityMap[rate] || intensityMap.moderate;
-  
+
   // Update dots
   dots.forEach((dot, index) => {
     if (index < config.dots) {
@@ -263,7 +307,7 @@ function updateIntensityIndicator(rate) {
       dot.classList.remove('active');
     }
   });
-  
+
   // Update label
   label.textContent = config.label;
 }
@@ -313,7 +357,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && e.target.tagName === 'SELECT') {
     e.target.blur();
   }
-  
+
   // Ctrl/Cmd + Enter to toggle extension
   if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
     const toggle = document.getElementById('enableToggle');
